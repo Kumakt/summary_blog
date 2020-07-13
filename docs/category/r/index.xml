@@ -1,0 +1,266 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>R | Kumakt Memorandum</title>
+    <link>/category/r/</link>
+      <atom:link href="/category/r/index.xml" rel="self" type="application/rss+xml" />
+    <description>R</description>
+    <generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><lastBuildDate>Mon, 13 Jul 2020 21:13:14 -0500</lastBuildDate>
+    <image>
+      <url>/images/icon_hu0b7a4cb9992c9ac0e91bd28ffd38dd00_9727_512x512_fill_lanczos_center_2.png</url>
+      <title>R</title>
+      <link>/category/r/</link>
+    </image>
+    
+    <item>
+      <title>Rによるグラフ基礎</title>
+      <link>/post/2015-07-23-r-rmarkdown/</link>
+      <pubDate>Mon, 13 Jul 2020 21:13:14 -0500</pubDate>
+      <guid>/post/2015-07-23-r-rmarkdown/</guid>
+      <description>
+
+
+&lt;div id=&#34;一般事項&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;一般事項&lt;/h3&gt;
+&lt;p&gt;Rにはグラフを書く上でおもに２つの方法がある。&lt;/p&gt;
+&lt;p&gt;デフォルトのgraphicsで扱うplot関数などとggplot2パッケージによる方法である。&lt;/p&gt;
+&lt;p&gt;ここでは医学系でよく扱うグラフをggplot2を実装する。&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;データの準備&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;データの準備&lt;/h3&gt;
+&lt;p&gt;あるA市とB市で収縮期血圧を調査した設定で架空データを作成する。&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;set.seed(125) # 乱数の固定のシード
+a &amp;lt;- rnorm(n = 100, mean = 140, sd = 10)
+b &amp;lt;- rnorm(n = 100, mean = 60, sd = 5 )
+c &amp;lt;- rep(c(&amp;quot;A_city&amp;quot;,&amp;quot;B_city&amp;quot;),50)
+d &amp;lt;- rbinom(n = 100, size = 1, prob = 0.6)  # ここでは男性の割合を0.6として二項分布によるランダム値の作成
+study &amp;lt;- data.frame(a,b,c,d)
+name  &amp;lt;- c(&amp;quot;SBP&amp;quot;, &amp;quot;Age&amp;quot;, &amp;quot;City&amp;quot;, &amp;quot;Sex&amp;quot;) 
+colnames(study) &amp;lt;- name
+# 性別は二値なのでデータ型を変換する
+study$Sex &amp;lt;- as.factor(study$Sex)
+study$Sex &amp;lt;- factor(study$Sex,levels = c(1,0),
+                  labels = c(&amp;quot;Male&amp;quot;,&amp;quot;Female&amp;quot;))&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;div id=&#34;データの確認&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;データの確認&lt;/h3&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;summary(study)
+##       SBP             Age            City        Sex    
+##  Min.   :103.9   Min.   :46.80   A_city:50   Male  :63  
+##  1st Qu.:134.6   1st Qu.:56.90   B_city:50   Female:37  
+##  Median :141.7   Median :59.93                          
+##  Mean   :141.0   Mean   :60.09                          
+##  3rd Qu.:147.9   3rd Qu.:63.14                          
+##  Max.   :164.0   Max.   :72.41&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;div id=&#34;散布図&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;散布図&lt;/h3&gt;
+&lt;p&gt;ggplotでは要素を追記していく形が基本となる。&lt;/p&gt;
+&lt;p&gt;散布図で連続変数同士の関係をみる。&lt;/p&gt;
+&lt;p&gt;例えば年齢と収縮期血圧の関係を見たい場合&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;library(ggplot2)
+ggplot(data = study, aes(x = Age, y = SBP, colour = City)) +   
+# ここがベースで、使用するデータ、軸、およびcolourを指定することでカテゴリーごとに色分けできる
+  geom_point(size = 4) +   # 散布図にするという指定
+  xlab(&amp;quot;Age&amp;quot;) +    # x軸ラベルの命名
+  ylab(&amp;quot;SBP&amp;quot;) +    # y軸ラベルの命名
+  ggtitle(&amp;quot;SBP調査&amp;quot;) +  # グラフタイトルの命名
+  theme_bw()  &lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-3-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;A市もB市も同じくらいばらついていそうである。&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;箱ひげ図&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;箱ひげ図&lt;/h3&gt;
+&lt;p&gt;離散型の変数と連続型の変数の関係をみるために使う。&lt;/p&gt;
+&lt;p&gt;箱ひげ図により統計量(平均値、標準偏差)も一緒に図示できる。&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;ggplot(data = study, aes(x = City, y = SBP, colour = City)) +
+  geom_boxplot() +   # ここがboxplotに変わっただけ
+  geom_jitter() +    # 各点のばらつきを追加する
+#  geom_point(size = 3, alpha = 0.5) +
+  xlab(&amp;quot;Age&amp;quot;) + 
+  ylab(&amp;quot;SBP&amp;quot;) + 
+  ggtitle(&amp;quot;SBP調査&amp;quot;) + 
+  theme_bw()&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-4-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;バイオリンプロット&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;バイオリンプロット&lt;/h3&gt;
+&lt;p&gt;バイオリンプロットによりデータの分布の密度も可視化することができる。&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;# バイオリンプロットも描くことができる
+ggplot(data = study, aes(x = City, y = SBP, colour = City)) +
+  geom_violin() +
+  xlab(&amp;quot;Age&amp;quot;) + 
+  ylab(&amp;quot;SBP&amp;quot;) + 
+  ggtitle(&amp;quot;SBP調査&amp;quot;) + 
+  theme_bw()&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-5-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;ヒストグラム&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;ヒストグラム&lt;/h3&gt;
+&lt;p&gt;連続変数などの分布をみる。&lt;/p&gt;
+&lt;p&gt;ここでは両方の都市での年齢の分布を示している。&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;# ヒストグラム
+ggplot(data = study, aes(x = Age)) +
+  geom_histogram(binwidth = 2) + # ヒストグラム描きます、階級値は2にしますという宣言
+  facet_wrap(~City)  # 群別の図を書くことができる&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-6-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;棒グラフ&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;棒グラフ&lt;/h3&gt;
+&lt;p&gt;今回のデータでは必要性が乏しいが&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;ggplot(data = study, aes(x = City, y = SBP, fill = Sex)) +
+  geom_bar(stat = &amp;quot;identity&amp;quot;, position = &amp;quot;dodge&amp;quot;) +
+  xlab(&amp;quot;Sex&amp;quot;) +
+  ylab(&amp;quot;SBP&amp;quot;)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-7-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;/div&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>線形回帰モデルの基礎</title>
+      <link>/post/linear/</link>
+      <pubDate>Mon, 13 Jul 2020 22:57:37 +0900</pubDate>
+      <guid>/post/linear/</guid>
+      <description>
+
+
+&lt;div id=&#34;一般事項&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;一般事項&lt;/h3&gt;
+&lt;p&gt;ある変数と別の変数の関係を数式で表したものを回帰モデルと呼ぶ。&lt;/p&gt;
+&lt;p&gt;両者の関係が線形で与えられると仮定したものが線形回帰モデルである。&lt;/p&gt;
+&lt;p&gt;式で表すと、&lt;/p&gt;
+&lt;p&gt;&lt;span class=&#34;math display&#34;&gt;\[y = \beta_0 + \beta_1x\]&lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;である。&lt;/p&gt;
+&lt;p&gt;実際のデータでこのモデルを考える際には、観測値と仮定したモデルとの間には誤差が生じるため&lt;/p&gt;
+&lt;p&gt;&lt;span class=&#34;math inline&#34;&gt;\(y_i = \beta_0 + \beta_1x_i + \epsilon_i\)&lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;となる。&lt;span class=&#34;math inline&#34;&gt;\(i = 1,2,3...n\)&lt;/span&gt;である。&lt;/p&gt;
+&lt;p&gt;このモデルがデータに良くあてはまるためには誤差&lt;span class=&#34;math inline&#34;&gt;\(\epsilon_i\)&lt;/span&gt;の総和が小さくなるようなパラメータを求めればよい。&lt;/p&gt;
+&lt;p&gt;ただし、線形回帰モデルと観測値の差は負の値になることもあるため、そのまま総和をとるわけでなく、2乗して&lt;/p&gt;
+&lt;p&gt;総和をとる。これが&lt;strong&gt;最小二乗法&lt;/strong&gt;である。&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;架空データの作成&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;架空データの作成&lt;/h3&gt;
+&lt;p&gt;ここでは収縮期血圧と年齢の関係をみる単純なモデルを考える。&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;# 乱数発生で毎回同じ値になるようにseedを設定する
+set.seed(123)
+# ある程度線形モデルにフィットするようにするため相関を指定
+rho &amp;lt;- 0.65
+# 正規分布に従う乱数の設定(サンプルサイズ、平均、標準偏差は自由に設定可能)
+y &amp;lt;- rnorm(n = 50, mean = 140, sd = 10)
+x &amp;lt;- rnorm(n = 50, mean = 65,  sd = 10)
+z &amp;lt;- rnorm(n = 50, mean = 0,   sd = 10)
+# 相関をもった現実味のある値にするため、それぞれbpとageに格納
+# sqrtは平方根という意味
+bp  &amp;lt;- sqrt(rho)*z + sqrt(1 - rho)*y + 30
+age &amp;lt;- sqrt(rho)*z + sqrt(1 - rho)*x + 30
+# データフレームという形式でbpとageをdataというオブジェクトに格納
+data &amp;lt;- data.frame(age,bp)
+# 列に名前を付ける
+name &amp;lt;- c(&amp;quot;age&amp;quot;,&amp;quot;SBP&amp;quot;)
+colnames(data) &amp;lt;- name
+# これで収縮期血圧と年齢の関係を示すデータが完成&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;div id=&#34;データの確認を行う&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;データの確認を行う&lt;/h3&gt;
+&lt;p&gt;次は実際にどんなデータであるか確認を行う。&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;# 外れ値や欠損値など
+# summaryはデータの平均などを示す関数、headは先頭から指定の行を表示
+summary(data)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;##       age             SBP        
+##  Min.   :47.15   Min.   : 91.89  
+##  1st Qu.:62.03   1st Qu.:103.05  
+##  Median :66.83   Median :111.74  
+##  Mean   :67.27   Mean   :110.98  
+##  3rd Qu.:72.59   3rd Qu.:118.22  
+##  Max.   :83.99   Max.   :134.37&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;head(data, n = 3)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;##        age      SBP
+## 1 64.22569 103.7818
+## 2 70.35670 113.5344
+## 3 66.21200 120.0577&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;# strは各変数の形式を示す、実際の解析ではどの形式なのか数値型なのか因子型なのかといった形の確認が重要
+str(data)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## &amp;#39;data.frame&amp;#39;:    50 obs. of  2 variables:
+##  $ age: num  64.2 70.4 66.2 73.7 59.4 ...
+##  $ SBP: num  104 114 120 110 106 ...&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;div id=&#34;図示&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;図示&lt;/h3&gt;
+&lt;p&gt;データの分布を散布図を描いて確認を行う。&lt;/p&gt;
+&lt;p&gt;plot関数でも描くことができるが今回はggplot2を用いる。&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;library(ggplot2)
+ggplot(data = data,
+       aes(x = age, y = SBP)) +
+  geom_point() +
+  theme_bw()&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/linear_files/figure-html/unnamed-chunk-3-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;散布図をみる限り、年齢と収縮期血圧には線形の関係がありそうに見える。&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;モデルを作成する&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;モデルを作成する&lt;/h3&gt;
+&lt;p&gt;ここでは２変量の単純なモデルを作成する。&lt;/p&gt;
+&lt;p&gt;lm関数は線形回帰モデルを作成する。&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;model &amp;lt;- lm(data = data, bp ~ age)
+summary(model)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## 
+## Call:
+## lm(formula = bp ~ age, data = data)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -14.833  -4.858   0.504   6.091  13.138 
+## 
+## Coefficients:
+##             Estimate Std. Error t value Pr(&amp;gt;|t|)    
+## (Intercept)  62.2829     8.1559   7.637 7.83e-10 ***
+## age           0.7239     0.1202   6.022 2.32e-07 ***
+## ---
+## Signif. codes:  0 &amp;#39;***&amp;#39; 0.001 &amp;#39;**&amp;#39; 0.01 &amp;#39;*&amp;#39; 0.05 &amp;#39;.&amp;#39; 0.1 &amp;#39; &amp;#39; 1
+## 
+## Residual standard error: 7.478 on 48 degrees of freedom
+## Multiple R-squared:  0.4304, Adjusted R-squared:  0.4185 
+## F-statistic: 36.26 on 1 and 48 DF,  p-value: 2.322e-07&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Residualsは残差のことで誤差の予測値とみなすことができる。&lt;/p&gt;
+&lt;p&gt;Coefficientsは係数の結果である。切片と係数に該当する。&lt;/p&gt;
+&lt;p&gt;今回のモデルは、&lt;/p&gt;
+&lt;p&gt;&lt;span class=&#34;math inline&#34;&gt;\(y_i = 62.283 + 0.724x_i\)&lt;/span&gt;と表すことができる。&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;モデルの評価&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;モデルの評価&lt;/h3&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;library(ggfortify)
+autoplot(model, smooth.colour = NA)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/linear_files/figure-html/unnamed-chunk-5-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;右上のQQplotはおおむね問題なさそうであり、残差は正規分布していそうである。&lt;/p&gt;
+&lt;p&gt;また左下の図をみても分散に明らかな偏りはなさそうであり、等分散性が保たれていると思われる。
+(ばらつきは比較的ありそうである)&lt;/p&gt;
+&lt;p&gt;また先のsummaryの結果をみるとR-squaredという項目があるが、これが&lt;em&gt;決定係数&lt;/em&gt;である。&lt;/p&gt;
+&lt;p&gt;予測値を&lt;span class=&#34;math inline&#34;&gt;\(\hat{y_i}\)&lt;/span&gt;、平均値を&lt;span class=&#34;math inline&#34;&gt;\(\bar{y}\)&lt;/span&gt;と表すと、&lt;/p&gt;
+&lt;p&gt;&lt;span class=&#34;math display&#34;&gt;\[R^2 =1 - \frac{\sum_{i=1}^n(y_i - \hat{y_i})^2}{\sum_{i=1}^n(y_i - \bar{y})^2}\]&lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;となる。決定係数は1に近いほど当てはまりがよいのであるから、この分数の部分が0に近ければよい。&lt;/p&gt;
+&lt;p&gt;分子が小さくなる、つまり予測値と観測値が近いほど0に近づく、決定係数が1に近づくということになる。&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;最後に散布図に線形回帰直線をひいてみる&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;最後に散布図に線形回帰直線をひいてみる&lt;/h3&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;ggplot(data = data,
+       aes(x = age, y = SBP)) +
+  geom_point() +
+  stat_smooth(method = &amp;quot;lm&amp;quot;, se = TRUE, size = 1) +
+  theme_bw()&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## `geom_smooth()` using formula &amp;#39;y ~ x&amp;#39;&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;/post/linear_files/figure-html/unnamed-chunk-6-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;結果&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;結果&lt;/h3&gt;
+&lt;p&gt;今回の年齢と収縮期血圧の関係では、年齢が高くなるほど線形に収縮期血圧が高くなると予想し、モデルを作成した。&lt;/p&gt;
+&lt;p&gt;モデルの前提は満たされているようであり、係数も有意な結果であった。&lt;/p&gt;
+&lt;p&gt;しかし決定係数は修正&lt;span class=&#34;math inline&#34;&gt;\(R^2\)&lt;/span&gt;および&lt;span class=&#34;math inline&#34;&gt;\(R^2\)&lt;/span&gt;ともに良いとは言えず、収縮期血圧について年齢だけのモデルでは、
+十分に説明できていないことになる。&lt;/p&gt;
+&lt;p&gt;実際の臨床でも血圧を予測するうえで他に、家族歴など様々な要因が重要であることは当然であり、年齢だけで
+十分に説明できないということは妥当であるといえる。&lt;/p&gt;
+&lt;/div&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>
