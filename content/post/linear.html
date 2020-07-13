@@ -1,0 +1,177 @@
+---
+# Documentation: https://sourcethemes.com/academic/docs/managing-content/
+
+title: "線形回帰モデルの基礎"
+subtitle: ""
+summary: "Rによる線形回帰モデルの実装"
+authors: [Kumakt]
+tags: ["regression"]
+categories: ["R"]
+date: 2020-07-13T22:57:37+09:00
+lastmod: 2020-07-14T22:57:37+09:00
+featured: false
+draft: false
+math: true
+
+# Featured image
+# To use, add an image named `featured.jpg/png` to your page's folder.
+# Focal points: Smart, Center, TopLeft, Top, TopRight, Left, Right, BottomLeft, Bottom, BottomRight.
+image:
+  caption: ""
+  focal_point: ""
+  preview_only: false
+
+# Projects (optional).
+#   Associate this post with one or more of your projects.
+#   Simply enter your project's folder or file name without extension.
+#   E.g. `projects = ["internal-project"]` references `content/project/deep-learning/index.md`.
+#   Otherwise, set `projects = []`.
+projects: []
+---
+
+
+
+<div id="一般事項" class="section level3">
+<h3>一般事項</h3>
+<p>ある変数と別の変数の関係を数式で表したものを回帰モデルと呼ぶ。</p>
+<p>両者の関係が線形で与えられると仮定したものが線形回帰モデルである。</p>
+<p>式で表すと、</p>
+<p><span class="math display">\[y = \beta_0 + \beta_1x\]</span></p>
+<p>である。</p>
+<p>実際のデータでこのモデルを考える際には、観測値と仮定したモデルとの間には誤差が生じるため</p>
+<p><span class="math inline">\(y_i = \beta_0 + \beta_1x_i + \epsilon_i\)</span>となる。</p>
+<p><span class="math inline">\(i = 1,2,3...n\)</span>である。</p>
+<p>このモデルがデータに良くあてはまるためには誤差<span class="math inline">\(\epsilon_i\)</span>の総和が小さくなるようなパラメータを求めればよい。</p>
+<p>ただし、線形回帰モデルと観測値の差は負の値になることもあるため、そのまま総和をとるわけでなく、2乗して</p>
+<p>総和をとる。これが<strong>最小二乗法</strong>である。</p>
+</div>
+<div id="架空データの作成" class="section level3">
+<h3>架空データの作成</h3>
+<p>ここでは収縮期血圧と年齢の関係をみる単純なモデルを考える。</p>
+<pre class="r"><code># 乱数発生で毎回同じ値になるようにseedを設定する
+set.seed(123)
+# ある程度線形モデルにフィットするようにするため相関を指定
+rho &lt;- 0.65
+# 正規分布に従う乱数の設定(サンプルサイズ、平均、標準偏差は自由に設定可能)
+y &lt;- rnorm(n = 50, mean = 140, sd = 10)
+x &lt;- rnorm(n = 50, mean = 65,  sd = 10)
+z &lt;- rnorm(n = 50, mean = 0,   sd = 10)
+# 相関をもった現実味のある値にするため、それぞれbpとageに格納
+# sqrtは平方根という意味
+bp  &lt;- sqrt(rho)*z + sqrt(1 - rho)*y + 30
+age &lt;- sqrt(rho)*z + sqrt(1 - rho)*x + 30
+# データフレームという形式でbpとageをdataというオブジェクトに格納
+data &lt;- data.frame(age,bp)
+# 列に名前を付ける
+name &lt;- c(&quot;age&quot;,&quot;SBP&quot;)
+colnames(data) &lt;- name
+# これで収縮期血圧と年齢の関係を示すデータが完成</code></pre>
+</div>
+<div id="データの確認を行う" class="section level3">
+<h3>データの確認を行う</h3>
+<p>次は実際にどんなデータであるか確認を行う。</p>
+<pre class="r"><code># 外れ値や欠損値など
+# summaryはデータの平均などを示す関数、headは先頭から指定の行を表示
+summary(data)</code></pre>
+<pre><code>##       age             SBP        
+##  Min.   :47.15   Min.   : 91.89  
+##  1st Qu.:62.03   1st Qu.:103.05  
+##  Median :66.83   Median :111.74  
+##  Mean   :67.27   Mean   :110.98  
+##  3rd Qu.:72.59   3rd Qu.:118.22  
+##  Max.   :83.99   Max.   :134.37</code></pre>
+<pre class="r"><code>head(data, n = 3)</code></pre>
+<pre><code>##        age      SBP
+## 1 64.22569 103.7818
+## 2 70.35670 113.5344
+## 3 66.21200 120.0577</code></pre>
+<pre class="r"><code># strは各変数の形式を示す、実際の解析ではどの形式なのか数値型なのか因子型なのかといった形の確認が重要
+str(data)</code></pre>
+<pre><code>## &#39;data.frame&#39;:    50 obs. of  2 variables:
+##  $ age: num  64.2 70.4 66.2 73.7 59.4 ...
+##  $ SBP: num  104 114 120 110 106 ...</code></pre>
+</div>
+<div id="図示" class="section level3">
+<h3>図示</h3>
+<p>データの分布を散布図を描いて確認を行う。</p>
+<p>plot関数でも描くことができるが今回はggplot2を用いる。</p>
+<pre class="r"><code>library(ggplot2)
+ggplot(data = data,
+       aes(x = age, y = SBP)) +
+  geom_point() +
+  theme_bw()</code></pre>
+<p><img src="/post/linear_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
+<p>散布図をみる限り、年齢と収縮期血圧には線形の関係がありそうに見える。</p>
+</div>
+<div id="モデルを作成する" class="section level3">
+<h3>モデルを作成する</h3>
+<p>ここでは２変量の単純なモデルを作成する。</p>
+<p>lm関数は線形回帰モデルを作成する。</p>
+<pre class="r"><code>model &lt;- lm(data = data, bp ~ age)
+summary(model)</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = bp ~ age, data = data)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -14.833  -4.858   0.504   6.091  13.138 
+## 
+## Coefficients:
+##             Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)  62.2829     8.1559   7.637 7.83e-10 ***
+## age           0.7239     0.1202   6.022 2.32e-07 ***
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Residual standard error: 7.478 on 48 degrees of freedom
+## Multiple R-squared:  0.4304, Adjusted R-squared:  0.4185 
+## F-statistic: 36.26 on 1 and 48 DF,  p-value: 2.322e-07</code></pre>
+<p>Residualsは残差のことで誤差の予測値とみなすことができる。</p>
+<p>Coefficientsは係数の結果である。切片と係数に該当する。</p>
+<p>今回のモデルは、</p>
+<p><span class="math inline">\(y_i = 62.283 + 0.724x_i\)</span>と表すことができる。</p>
+</div>
+<div id="モデルの評価" class="section level3">
+<h3>モデルの評価</h3>
+<pre class="r"><code>library(ggfortify)
+autoplot(model, smooth.colour = NA)</code></pre>
+<pre><code>## Warning: `arrange_()` is deprecated as of dplyr 0.7.0.
+## Please use `arrange()` instead.
+## See vignette(&#39;programming&#39;) for more help
+## This warning is displayed once every 8 hours.
+## Call `lifecycle::last_warnings()` to see where this warning was generated.</code></pre>
+<pre><code>## Warning: Removed 50 row(s) containing missing values (geom_path).
+
+## Warning: Removed 50 row(s) containing missing values (geom_path).
+
+## Warning: Removed 50 row(s) containing missing values (geom_path).</code></pre>
+<p><img src="/post/linear_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
+<p>右上のQQplotはおおむね問題なさそうであり、残差は正規分布していそうである。</p>
+<p>また左下の図をみても分散に明らかな偏りはなさそうであり、等分散性が保たれていると思われる。
+(ばらつきは比較的ありそうである)</p>
+<p>また先のsummaryの結果をみるとR-squaredという項目があるが、これが<em>決定係数</em>である。</p>
+<p>予測値を<span class="math inline">\(\hat{y_i}\)</span>、平均値を<span class="math inline">\(\bar{y}\)</span>と表すと、</p>
+<p><span class="math display">\[R^2 =1 - \frac{\sum_{i=1}^n(y_i - \hat{y_i})^2}{\sum_{i=1}^n(y_i - \bar{y})^2}\]</span></p>
+<p>となる。決定係数は1に近いほど当てはまりがよいのであるから、この分数の部分が0に近ければよい。</p>
+<p>分子が小さくなる、つまり予測値と観測値が近いほど0に近づく、決定係数が1に近づくということになる。</p>
+</div>
+<div id="最後に散布図に線形回帰直線をひいてみる" class="section level3">
+<h3>最後に散布図に線形回帰直線をひいてみる</h3>
+<pre class="r"><code>ggplot(data = data,
+       aes(x = age, y = SBP)) +
+  geom_point() +
+  stat_smooth(method = &quot;lm&quot;, se = TRUE, size = 1) +
+  theme_bw()</code></pre>
+<pre><code>## `geom_smooth()` using formula &#39;y ~ x&#39;</code></pre>
+<p><img src="/post/linear_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+</div>
+<div id="結果" class="section level3">
+<h3>結果</h3>
+<p>今回の年齢と収縮期血圧の関係では、年齢が高くなるほど線形に収縮期血圧が高くなると予想し、モデルを作成した。</p>
+<p>モデルの前提は満たされているようであり、係数も有意な結果であった。</p>
+<p>しかし決定係数は修正<span class="math inline">\(R^2\)</span>および<span class="math inline">\(R^2\)</span>ともに良いとは言えず、収縮期血圧について年齢だけのモデルでは、
+十分に説明できていないことになる。</p>
+<p>実際の臨床でも血圧を予測するうえで他に、家族歴など様々な要因が重要であることは当然であり、年齢だけで
+十分に説明できないということは妥当であるといえる。</p>
+</div>

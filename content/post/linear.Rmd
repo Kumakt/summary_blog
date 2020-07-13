@@ -1,0 +1,180 @@
+---
+# Documentation: https://sourcethemes.com/academic/docs/managing-content/
+
+title: "線形回帰モデルの基礎"
+subtitle: ""
+summary: "Rによる線形回帰モデルの実装"
+authors: [Kumakt]
+tags: ["regression"]
+categories: ["R"]
+date: 2020-07-13T22:57:37+09:00
+lastmod: 2020-07-14T22:57:37+09:00
+featured: false
+draft: false
+math: true
+
+# Featured image
+# To use, add an image named `featured.jpg/png` to your page's folder.
+# Focal points: Smart, Center, TopLeft, Top, TopRight, Left, Right, BottomLeft, Bottom, BottomRight.
+image:
+  caption: ""
+  focal_point: ""
+  preview_only: false
+
+# Projects (optional).
+#   Associate this post with one or more of your projects.
+#   Simply enter your project's folder or file name without extension.
+#   E.g. `projects = ["internal-project"]` references `content/project/deep-learning/index.md`.
+#   Otherwise, set `projects = []`.
+projects: []
+---
+
+### 一般事項
+
+ある変数と別の変数の関係を数式で表したものを回帰モデルと呼ぶ。
+
+両者の関係が線形で与えられると仮定したものが線形回帰モデルである。
+
+式で表すと、
+
+$$y = \beta_0 + \beta_1x$$
+
+である。
+
+実際のデータでこのモデルを考える際には、観測値と仮定したモデルとの間には誤差が生じるため
+
+$y_i = \beta_0 + \beta_1x_i + \epsilon_i$となる。
+
+$i = 1,2,3...n$である。
+
+このモデルがデータに良くあてはまるためには誤差$\epsilon_i$の総和が小さくなるようなパラメータを求めればよい。
+
+ただし、線形回帰モデルと観測値の差は負の値になることもあるため、そのまま総和をとるわけでなく、2乗して
+
+総和をとる。これが**最小二乗法**である。
+
+
+### 架空データの作成
+
+ここでは収縮期血圧と年齢の関係をみる単純なモデルを考える。
+
+```{r}
+# 乱数発生で毎回同じ値になるようにseedを設定する
+set.seed(123)
+# ある程度線形モデルにフィットするようにするため相関を指定
+rho <- 0.65
+# 正規分布に従う乱数の設定(サンプルサイズ、平均、標準偏差は自由に設定可能)
+y <- rnorm(n = 50, mean = 140, sd = 10)
+x <- rnorm(n = 50, mean = 65,  sd = 10)
+z <- rnorm(n = 50, mean = 0,   sd = 10)
+# 相関をもった現実味のある値にするため、それぞれbpとageに格納
+# sqrtは平方根という意味
+bp  <- sqrt(rho)*z + sqrt(1 - rho)*y + 30
+age <- sqrt(rho)*z + sqrt(1 - rho)*x + 30
+# データフレームという形式でbpとageをdataというオブジェクトに格納
+data <- data.frame(age,bp)
+# 列に名前を付ける
+name <- c("age","SBP")
+colnames(data) <- name
+# これで収縮期血圧と年齢の関係を示すデータが完成
+```
+
+
+### データの確認を行う
+
+次は実際にどんなデータであるか確認を行う。
+
+```{r}
+# 外れ値や欠損値など
+# summaryはデータの平均などを示す関数、headは先頭から指定の行を表示
+summary(data)
+head(data, n = 3)
+# strは各変数の形式を示す、実際の解析ではどの形式なのか数値型なのか因子型なのかといった形の確認が重要
+str(data)
+```
+
+
+### 図示
+
+データの分布を散布図を描いて確認を行う。
+
+plot関数でも描くことができるが今回はggplot2を用いる。
+
+```{r}
+library(ggplot2)
+ggplot(data = data,
+       aes(x = age, y = SBP)) +
+  geom_point() +
+  theme_bw()
+```
+
+
+散布図をみる限り、年齢と収縮期血圧には線形の関係がありそうに見える。
+
+### モデルを作成する
+
+ここでは２変量の単純なモデルを作成する。
+
+lm関数は線形回帰モデルを作成する。
+
+```{r}
+model <- lm(data = data, bp ~ age)
+summary(model)
+```
+
+
+Residualsは残差のことで誤差の予測値とみなすことができる。
+
+Coefficientsは係数の結果である。切片と係数に該当する。
+
+今回のモデルは、
+
+$y_i = 62.283 + 0.724x_i$と表すことができる。
+
+
+### モデルの評価
+
+```{r}
+library(ggfortify)
+autoplot(model, smooth.colour = NA)
+```
+
+
+右上のQQplotはおおむね問題なさそうであり、残差は正規分布していそうである。
+
+また左下の図をみても分散に明らかな偏りはなさそうであり、等分散性が保たれていると思われる。
+(ばらつきは比較的ありそうである)
+
+また先のsummaryの結果をみるとR-squaredという項目があるが、これが*決定係数*である。
+
+予測値を$\hat{y_i}$、平均値を$\bar{y}$と表すと、
+
+$$R^2 =1 - \frac{\sum_{i=1}^n(y_i - \hat{y_i})^2}{\sum_{i=1}^n(y_i - \bar{y})^2}$$
+
+となる。決定係数は1に近いほど当てはまりがよいのであるから、この分数の部分が0に近ければよい。
+
+分子が小さくなる、つまり予測値と観測値が近いほど0に近づく、決定係数が1に近づくということになる。
+
+
+### 最後に散布図に線形回帰直線をひいてみる
+
+```{r}
+ggplot(data = data,
+       aes(x = age, y = SBP)) +
+  geom_point() +
+  stat_smooth(method = "lm", se = TRUE, size = 1) +
+  theme_bw()
+```
+
+
+### 結果
+
+今回の年齢と収縮期血圧の関係では、年齢が高くなるほど線形に収縮期血圧が高くなると予想し、モデルを作成した。
+
+モデルの前提は満たされているようであり、係数も有意な結果であった。
+
+しかし決定係数は修正$R^2$および$R^2$ともに良いとは言えず、収縮期血圧について年齢だけのモデルでは、
+十分に説明できていないことになる。
+
+実際の臨床でも血圧を予測するうえで他に、家族歴など様々な要因が重要であることは当然であり、年齢だけで
+十分に説明できないということは妥当であるといえる。

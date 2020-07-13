@@ -1,0 +1,140 @@
+---
+title: "Rによるグラフ基礎"
+author: ["Kumakt"]
+date: 2020-07-13T21:13:14-05:00
+categories: ["R"]
+tags: ["R Markdown", "ggplot", "regression"]
+output: 
+  toc: TRUE  #toc(table of contents)を自動生成するかどうか。論理値。
+  toc_depth: 3  #tocで拾う見出しレベルを指定。数値。
+  toc_float: TRUE  #tocをページ冒頭ではなくサイドメニューとして浮かせて表示させるかどうか
+number_sections: FALSE  #見出しに通し番号をつけるかどうか
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse = TRUE)
+```
+
+
+### 一般事項
+
+Rにはグラフを書く上でおもに２つの方法がある。
+
+デフォルトのgraphicsで扱うplot関数などとggplot2パッケージによる方法である。
+
+ここでは医学系でよく扱うグラフをggplot2を実装する。
+
+
+### データの準備
+
+
+あるA市とB市で収縮期血圧を調査した設定で架空データを作成する。
+
+
+```{r}
+set.seed(125) # 乱数の固定のシード
+a <- rnorm(n = 100, mean = 140, sd = 10)
+b <- rnorm(n = 100, mean = 60, sd = 5 )
+c <- rep(c("A_city","B_city"),50)
+d <- rbinom(n = 100, size = 1, prob = 0.6)  # ここでは男性の割合を0.6として二項分布によるランダム値の作成
+study <- data.frame(a,b,c,d)
+name  <- c("SBP", "Age", "City", "Sex") 
+colnames(study) <- name
+# 性別は二値なのでデータ型を変換する
+study$Sex <- as.factor(study$Sex)
+study$Sex <- factor(study$Sex,levels = c(1,0),
+                  labels = c("Male","Female"))
+```
+
+
+### データの確認
+
+```{r}
+summary(study)
+```
+
+
+### 散布図
+
+ggplotでは要素を追記していく形が基本となる。
+
+散布図で連続変数同士の関係をみる。
+
+例えば年齢と収縮期血圧の関係を見たい場合
+
+```{r}
+library(ggplot2)
+ggplot(data = study, aes(x = Age, y = SBP, colour = City)) +   
+# ここがベースで、使用するデータ、軸、およびcolourを指定することでカテゴリーごとに色分けできる
+  geom_point(size = 4) +   # 散布図にするという指定
+  xlab("Age") +    # x軸ラベルの命名
+  ylab("SBP") +    # y軸ラベルの命名
+  ggtitle("SBP調査") +  # グラフタイトルの命名
+  theme_bw()  
+```
+
+
+A市もB市も同じくらいばらついていそうである。
+
+
+### 箱ひげ図
+
+
+離散型の変数と連続型の変数の関係をみるために使う。
+
+箱ひげ図により統計量(平均値、標準偏差)も一緒に図示できる。
+
+
+```{r}
+ggplot(data = study, aes(x = City, y = SBP, colour = City)) +
+  geom_boxplot() +   # ここがboxplotに変わっただけ
+  geom_jitter() +    # 各点のばらつきを追加する
+#  geom_point(size = 3, alpha = 0.5) +
+  xlab("Age") + 
+  ylab("SBP") + 
+  ggtitle("SBP調査") + 
+  theme_bw()
+```
+
+
+### バイオリンプロット
+
+バイオリンプロットによりデータの分布の密度も可視化することができる。
+
+```{r}
+# バイオリンプロットも描くことができる
+ggplot(data = study, aes(x = City, y = SBP, colour = City)) +
+  geom_violin() +
+  xlab("Age") + 
+  ylab("SBP") + 
+  ggtitle("SBP調査") + 
+  theme_bw()
+```
+
+
+
+### ヒストグラム
+
+連続変数などの分布をみる。
+
+ここでは両方の都市での年齢の分布を示している。
+
+
+```{r}
+# ヒストグラム
+ggplot(data = study, aes(x = Age)) +
+  geom_histogram(binwidth = 2) + # ヒストグラム描きます、階級値は2にしますという宣言
+  facet_wrap(~City)  # 群別の図を書くことができる
+```
+
+
+### 棒グラフ
+
+今回のデータでは必要性が乏しいが
+
+```{r}
+ggplot(data = study, aes(x = City, y = SBP, fill = Sex)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  xlab("Sex") +
+  ylab("SBP")
+```
