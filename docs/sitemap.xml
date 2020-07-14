@@ -3,13 +3,23 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   
   <url>
+    <loc>/authors/</loc>
+    <lastmod>2020-07-14T22:57:37+09:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>/authors/</loc>
+    <lastmod>2020-07-14T22:57:37+09:00</lastmod>
+  </url>
+  
+  <url>
     <loc>/categories/</loc>
     <lastmod>2020-07-14T22:57:37+09:00</lastmod>
   </url>
   
   <url>
-    <loc>/tag/ggplot/</loc>
-    <lastmod>2020-07-13T21:13:14-05:00</lastmod>
+    <loc>/author/kumakt/</loc>
+    <lastmod>2020-07-14T22:57:37+09:00</lastmod>
   </url>
   
   <url>
@@ -28,18 +38,8 @@
   </url>
   
   <url>
-    <loc>/tag/r-markdown/</loc>
-    <lastmod>2020-07-13T21:13:14-05:00</lastmod>
-  </url>
-  
-  <url>
     <loc>/tag/regression/</loc>
     <lastmod>2020-07-14T22:57:37+09:00</lastmod>
-  </url>
-  
-  <url>
-    <loc>/post/2015-07-23-r-rmarkdown/</loc>
-    <lastmod>2020-07-13T21:13:14-05:00</lastmod>
   </url>
   
   <url>
@@ -48,23 +48,33 @@
   </url>
   
   <url>
-    <loc>/authors/</loc>
-    <lastmod>2020-07-14T22:57:37+09:00</lastmod>
-  </url>
-  
-  <url>
-    <loc>/authors/</loc>
-    <lastmod>2020-07-14T22:57:37+09:00</lastmod>
-  </url>
-  
-  <url>
-    <loc>/author/kumakt/</loc>
-    <lastmod>2020-07-14T22:57:37+09:00</lastmod>
-  </url>
-  
-  <url>
     <loc>/post/linear/</loc>
     <lastmod>2020-07-14T22:57:37+09:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>/tag/glm/</loc>
+    <lastmod>2020-07-14T22:46:04+09:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>/post/logi/</loc>
+    <lastmod>2020-07-14T22:46:04+09:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>/tag/ggplot/</loc>
+    <lastmod>2020-07-13T21:13:14-05:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>/tag/r-markdown/</loc>
+    <lastmod>2020-07-13T21:13:14-05:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>/post/2015-07-23-r-rmarkdown/</loc>
+    <lastmod>2020-07-13T21:13:14-05:00</lastmod>
   </url>
   
   <url>

@@ -1,0 +1,153 @@
+---
+# Documentation: https://sourcethemes.com/academic/docs/managing-content/
+
+title: "Logistic回帰の実装"
+subtitle: ""
+summary: "Logistic回帰の実装について簡単に"
+authors: [Kumakt]
+tags: ["GLM"]
+categories: ["R"]
+date: 2020-07-14T22:46:04+09:00
+lastmod: 2020-07-14T22:46:04+09:00
+featured: false
+draft: false
+math: true
+
+# Featured image
+# To use, add an image named `featured.jpg/png` to your page's folder.
+# Focal points: Smart, Center, TopLeft, Top, TopRight, Left, Right, BottomLeft, Bottom, BottomRight.
+image:
+  caption: ""
+  focal_point: ""
+  preview_only: false
+
+# Projects (optional).
+#   Associate this post with one or more of your projects.
+#   Simply enter your project's folder or file name without extension.
+#   E.g. `projects = ["internal-project"]` references `content/project/deep-learning/index.md`.
+#   Otherwise, set `projects = []`.
+projects: []
+---
+
+### パッケージの読み込み
+
+今回はパッケージに付属のデータを用いる。
+
+```{r message=FALSE, warning=FALSE}
+# 必要なパッケージの読み込み
+library(ggplot2)
+library(dplyr)
+library(ggfortify)
+library(DAAG)
+```
+
+
+### データの確認
+
+```{r}
+# データの確認
+data("head.injury")
+summary(head.injury)
+str(head.injury)
+## 分布や欠損、各変数の型を確認しておく
+```
+
+
+- DAAGパッケージに付属のデータセット
+
+軽度の頭部外傷のデータセット
+
+- 3121名、11列をもつ。
+
+以下、変数名
+
+- age.65：0 = under 65, 1 = over 65
+
+- amnesia.before : 受傷前についての健忘(記憶があるか)
+amnesia before impact (less than 30 minutes = 0, more than 30 minutes =1).
+
+- basal.skull.fracture : 頭蓋亭骨折(0 = no fracture, 1 = fracture).
+
+- GCS.decrease : 意識レベル低下
+Glasgow Coma Scale decrease (0 = no deterioration, 1 = deterioration).
+
+- GCS.13 : 最初の意識レベル initial Glasgow Coma Scale (0 = not ‘13’, 1 = ‘13’).
+
+- GCS.15.2hours : けがをして2時間後の意識レベル
+Glasgow Coma Scale after 2 hours (0 = not ‘15’, 1 = '15').
+
+- high.risk : 神経学的な介入が必要かどうか医師による判断
+assessed by clinician as high risk for neurological intervention (0 = not high risk, 1 = high risk).
+
+- loss.of.consciousness : 意識消失の有無(0 = conscious, 1 = loss of consciousness).
+
+- open.skull.fracture : 開放性頭蓋骨骨折(0 = no fracture, 1 = fracture)
+
+- vomiting : 嘔吐の有無(0 = no vomiting, 1 = vomiting)
+
+- clinically.important.brain.injury : CTで臨床的に重要な急性期の脳所見があるかどうか
+any acute brain finding revealed on CT (0 = not present, 1 = present).
+
+<References>
+
+Stiell, I.G., Wells, G.A., Vandemheen, K., Clement, C., Lesiuk, H., Laupacis, A., McKnight, R.D., Verbee, R., Brison, R., Cass, D., Eisenhauer, M., Greenberg, G.H., and Worthington, J. (2001) The Canadian CT Head Rule for Patients with Minor Head Injury, The Lancet. 357: 1391-1396.
+
+＜今回のモデル＞
+
+目的変数：CT所見に何か異常があるか
+
+興味のある説明変数：健忘の有無
+
+として多変量ロジスティック回帰モデルを作成する。
+
+### モデルの作成
+
+```{r}
+# モデルの作成
+# glm関数は一般化線形モデルに用いる関数で、familyで自分が使いたい分布を指定する。
+#今回は二値変数がアウトカムなので二項分布に従い、リンク関数はlogitなので以下のようになる
+
+model <- glm(clinically.important.brain.injury ~ amnesia.before  + age.65 + GCS.decrease + GCS.15.2hours + GCS.13 + high.risk + loss.of.consciousness + vomiting,family = binomial(link = "logit"),data = head.injury)
+```
+
+
+### 結果の確認
+
+```{r}
+# モデルの結果確認
+summary(model)
+```
+
+
+各変数の係数を確認する。
+
+値をオッズ比へ変換する。
+
+```{r}
+# オッズ比と95%信頼区間の確認
+result_odds <- as.data.frame(cbind(exp(summary(model)$coefficient[,1]),exp(confint(model))
+                                    ,summary(model)$coefficient[,4]))
+# result_oddsというデータフレームの列名を名付ける
+names(result_odds) <- c("Odds ratio","lower 95%CI","upper 95%CI","P value")
+# 小数点２桁で結果を表示
+round(result_odds,2)
+```
+
+
+### モデルの評価
+
+```{r}
+library(pROC)
+ROC <- roc(response=head.injury$clinically.important.brain.injury, predictor=model$fitted.values)
+ROC
+plot(ROC)
+```
+
+
+ROC(C統計量)は0.837くらいで今回のモデルの当てはまりはよさそうである。
+
+「怪我の前の記憶喪失(健忘)」と「CT所見に何かしら異常が見つかるか」の関係をみることが今回の目的であり、<br>
+最終結果はオッズ比 1.83,  95%CI	1.32 - 2.53となり、受傷時の健忘はCTの異常所見の発見に影響があると言える。
+
+
+

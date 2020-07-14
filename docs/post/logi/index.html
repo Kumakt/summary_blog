@@ -27,10 +27,10 @@
   
     
   
-  <meta name="description" content="一般事項 Rにはグラフを書く上でおもに２つの方法がある。 デフォ">
+  <meta name="description" content="Logistic回帰の実装について簡単に">
 
   
-  <link rel="alternate" hreflang="en-us" href="../../post/2015-07-23-r-rmarkdown/">
+  <link rel="alternate" hreflang="en-us" href="../../post/logi/">
 
   
 
@@ -42,6 +42,9 @@
   
 
   
+  
+  
+  <script src="../../js/mathjax-config.js"></script>
   
 
   
@@ -173,9 +176,9 @@
 
       
       
-        
-      
 
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" integrity="" crossorigin="anonymous" async></script>
       
     
       
@@ -221,7 +224,7 @@
   <link rel="icon" type="image/png" href="../../images/icon_hu0b7a4cb9992c9ac0e91bd28ffd38dd00_9727_32x32_fill_lanczos_center_2.png">
   <link rel="apple-touch-icon" type="image/png" href="../../images/icon_hu0b7a4cb9992c9ac0e91bd28ffd38dd00_9727_192x192_fill_lanczos_center_2.png">
 
-  <link rel="canonical" href="../../post/2015-07-23-r-rmarkdown/">
+  <link rel="canonical" href="../../post/logi/">
 
   
   
@@ -237,15 +240,15 @@
   <meta property="twitter:card" content="summary">
   
   <meta property="og:site_name" content="Kumakt Memorandum">
-  <meta property="og:url" content="/post/2015-07-23-r-rmarkdown/">
-  <meta property="og:title" content="Rによるグラフ基礎 | Kumakt Memorandum">
-  <meta property="og:description" content="一般事項 Rにはグラフを書く上でおもに２つの方法がある。 デフォ"><meta property="og:image" content="/images/icon_hu0b7a4cb9992c9ac0e91bd28ffd38dd00_9727_512x512_fill_lanczos_center_2.png">
+  <meta property="og:url" content="/post/logi/">
+  <meta property="og:title" content="Logistic回帰の実装 | Kumakt Memorandum">
+  <meta property="og:description" content="Logistic回帰の実装について簡単に"><meta property="og:image" content="/images/icon_hu0b7a4cb9992c9ac0e91bd28ffd38dd00_9727_512x512_fill_lanczos_center_2.png">
   <meta property="twitter:image" content="/images/icon_hu0b7a4cb9992c9ac0e91bd28ffd38dd00_9727_512x512_fill_lanczos_center_2.png"><meta property="og:locale" content="en-us">
   
     
-      <meta property="article:published_time" content="2020-07-13T21:13:14-05:00">
+      <meta property="article:published_time" content="2020-07-14T22:46:04&#43;09:00">
     
-    <meta property="article:modified_time" content="2020-07-13T21:13:14-05:00">
+    <meta property="article:modified_time" content="2020-07-14T22:46:04&#43;09:00">
   
 
   
@@ -269,12 +272,12 @@
   "@type": "BlogPosting",
   "mainEntityOfPage": {
     "@type": "WebPage",
-    "@id": "/post/2015-07-23-r-rmarkdown/"
+    "@id": "/post/logi/"
   },
-  "headline": "Rによるグラフ基礎",
+  "headline": "Logistic回帰の実装",
   
-  "datePublished": "2020-07-13T21:13:14-05:00",
-  "dateModified": "2020-07-13T21:13:14-05:00",
+  "datePublished": "2020-07-14T22:46:04+09:00",
+  "dateModified": "2020-07-14T22:46:04+09:00",
   
   "author": {
     "@type": "Person",
@@ -289,7 +292,7 @@
       "url": "/images/icon_hu0b7a4cb9992c9ac0e91bd28ffd38dd00_9727_192x192_fill_lanczos_center_2.png"
     }
   },
-  "description": "一般事項 Rにはグラフを書く上でおもに２つの方法がある。 デフォ"
+  "description": "Logistic回帰の実装について簡単に"
 }
 </script>
 
@@ -307,7 +310,7 @@
 
 
 
-  <title>Rによるグラフ基礎 | Kumakt Memorandum</title>
+  <title>Logistic回帰の実装 | Kumakt Memorandum</title>
 
 </head>
 <body id="top" data-spy="scroll" data-offset="70" data-target="#TableOfContents" >
@@ -503,7 +506,7 @@
   
   
 <div class="article-container pt-3">
-  <h1>Rによるグラフ基礎</h1>
+  <h1>Logistic回帰の実装</h1>
 
   
 
@@ -532,7 +535,7 @@
     
       
     
-    Jul 13, 2020
+    Jul 14, 2020
   </span>
   
 
@@ -541,7 +544,7 @@
   
   <span class="middot-divider"></span>
   <span class="article-reading-time">
-    2 min read
+    4 min read
   </span>
   
 
@@ -584,99 +587,177 @@
       
 
 
-<div id="一般事項" class="section level3">
-<h3>一般事項</h3>
-<p>Rにはグラフを書く上でおもに２つの方法がある。</p>
-<p>デフォルトのgraphicsで扱うplot関数などとggplot2パッケージによる方法である。</p>
-<p>ここでは医学系でよく扱うグラフをggplot2を実装する。</p>
-</div>
-<div id="データの準備" class="section level3">
-<h3>データの準備</h3>
-<p>あるA市とB市で収縮期血圧を調査した設定で架空データを作成する。</p>
-<pre class="r"><code>set.seed(125) # 乱数の固定のシード
-a &lt;- rnorm(n = 100, mean = 140, sd = 10)
-b &lt;- rnorm(n = 100, mean = 60, sd = 5 )
-c &lt;- rep(c(&quot;A_city&quot;,&quot;B_city&quot;),50)
-d &lt;- rbinom(n = 100, size = 1, prob = 0.6)  # ここでは男性の割合を0.6として二項分布によるランダム値の作成
-study &lt;- data.frame(a,b,c,d)
-name  &lt;- c(&quot;SBP&quot;, &quot;Age&quot;, &quot;City&quot;, &quot;Sex&quot;) 
-colnames(study) &lt;- name
-# 性別は二値なのでデータ型を変換する
-study$Sex &lt;- as.factor(study$Sex)
-study$Sex &lt;- factor(study$Sex,levels = c(1,0),
-                  labels = c(&quot;Male&quot;,&quot;Female&quot;))</code></pre>
+<div id="パッケージの読み込み" class="section level3">
+<h3>パッケージの読み込み</h3>
+<p>今回はパッケージに付属のデータを用いる。</p>
+<pre class="r"><code># 必要なパッケージの読み込み
+library(ggplot2)
+library(dplyr)
+library(ggfortify)
+library(DAAG)</code></pre>
 </div>
 <div id="データの確認" class="section level3">
 <h3>データの確認</h3>
-<pre class="r"><code>summary(study)
-##       SBP             Age            City        Sex    
-##  Min.   :103.9   Min.   :46.80   A_city:50   Male  :63  
-##  1st Qu.:134.6   1st Qu.:56.90   B_city:50   Female:37  
-##  Median :141.7   Median :59.93                          
-##  Mean   :141.0   Mean   :60.09                          
-##  3rd Qu.:147.9   3rd Qu.:63.14                          
-##  Max.   :164.0   Max.   :72.41</code></pre>
+<pre class="r"><code># データの確認
+data(&quot;head.injury&quot;)
+summary(head.injury)</code></pre>
+<pre><code>##      age.65      amnesia.before   basal.skull.fracture  GCS.decrease    
+##  Min.   :0.000   Min.   :0.0000   Min.   :0.00000      Min.   :0.00000  
+##  1st Qu.:0.000   1st Qu.:0.0000   1st Qu.:0.00000      1st Qu.:0.00000  
+##  Median :0.000   Median :0.0000   Median :0.00000      Median :0.00000  
+##  Mean   :0.116   Mean   :0.2047   Mean   :0.06985      Mean   :0.02275  
+##  3rd Qu.:0.000   3rd Qu.:0.0000   3rd Qu.:0.00000      3rd Qu.:0.00000  
+##  Max.   :1.000   Max.   :1.0000   Max.   :1.00000      Max.   :1.00000  
+##      GCS.13        GCS.15.2hours      high.risk      loss.of.consciousness
+##  Min.   :0.00000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000       
+##  1st Qu.:0.00000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000       
+##  Median :0.00000   Median :0.0000   Median :0.0000   Median :0.0000       
+##  Mean   :0.03749   Mean   :0.1266   Mean   :0.2429   Mean   :0.1118       
+##  3rd Qu.:0.00000   3rd Qu.:0.0000   3rd Qu.:0.0000   3rd Qu.:0.0000       
+##  Max.   :1.00000   Max.   :1.0000   Max.   :1.0000   Max.   :1.0000       
+##  open.skull.fracture    vomiting       clinically.important.brain.injury
+##  Min.   :0.00000     Min.   :0.00000   Min.   :0.0000                   
+##  1st Qu.:0.00000     1st Qu.:0.00000   1st Qu.:0.0000                   
+##  Median :0.00000     Median :0.00000   Median :0.0000                   
+##  Mean   :0.03685     Mean   :0.09869   Mean   :0.0801                   
+##  3rd Qu.:0.00000     3rd Qu.:0.00000   3rd Qu.:0.0000                   
+##  Max.   :1.00000     Max.   :1.00000   Max.   :1.0000</code></pre>
+<pre class="r"><code>str(head.injury)</code></pre>
+<pre><code>## &#39;data.frame&#39;:    3121 obs. of  11 variables:
+##  $ age.65                           : num  0 0 0 0 0 0 0 0 1 0 ...
+##  $ amnesia.before                   : num  1 0 0 0 0 1 0 0 0 1 ...
+##  $ basal.skull.fracture             : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ GCS.decrease                     : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ GCS.13                           : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ GCS.15.2hours                    : num  0 0 0 1 1 0 0 0 0 0 ...
+##  $ high.risk                        : num  0 0 0 0 0 0 0 0 1 0 ...
+##  $ loss.of.consciousness            : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ open.skull.fracture              : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ vomiting                         : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ clinically.important.brain.injury: num  0 0 0 0 0 0 0 0 0 0 ...</code></pre>
+<pre class="r"><code>## 分布や欠損、各変数の型を確認しておく</code></pre>
+<ul>
+<li>DAAGパッケージに付属のデータセット</li>
+</ul>
+<p>軽度の頭部外傷のデータセット</p>
+<ul>
+<li>3121名、11列をもつ。</li>
+</ul>
+<p>以下、変数名</p>
+<ul>
+<li><p>age.65：0 = under 65, 1 = over 65</p></li>
+<li><p>amnesia.before : 受傷前についての健忘(記憶があるか)
+amnesia before impact (less than 30 minutes = 0, more than 30 minutes =1).</p></li>
+<li><p>basal.skull.fracture : 頭蓋亭骨折(0 = no fracture, 1 = fracture).</p></li>
+<li><p>GCS.decrease : 意識レベル低下
+Glasgow Coma Scale decrease (0 = no deterioration, 1 = deterioration).</p></li>
+<li><p>GCS.13 : 最初の意識レベル initial Glasgow Coma Scale (0 = not ‘13’, 1 = ‘13’).</p></li>
+<li><p>GCS.15.2hours : けがをして2時間後の意識レベル
+Glasgow Coma Scale after 2 hours (0 = not ‘15’, 1 = ‘15’).</p></li>
+<li><p>high.risk : 神経学的な介入が必要かどうか医師による判断
+assessed by clinician as high risk for neurological intervention (0 = not high risk, 1 = high risk).</p></li>
+<li><p>loss.of.consciousness : 意識消失の有無(0 = conscious, 1 = loss of consciousness).</p></li>
+<li><p>open.skull.fracture : 開放性頭蓋骨骨折(0 = no fracture, 1 = fracture)</p></li>
+<li><p>vomiting : 嘔吐の有無(0 = no vomiting, 1 = vomiting)</p></li>
+<li><p>clinically.important.brain.injury : CTで臨床的に重要な急性期の脳所見があるかどうか
+any acute brain finding revealed on CT (0 = not present, 1 = present).</p></li>
+</ul>
+<p><References></p>
+<p>Stiell, I.G., Wells, G.A., Vandemheen, K., Clement, C., Lesiuk, H., Laupacis, A., McKnight, R.D., Verbee, R., Brison, R., Cass, D., Eisenhauer, M., Greenberg, G.H., and Worthington, J. (2001) The Canadian CT Head Rule for Patients with Minor Head Injury, The Lancet. 357: 1391-1396.</p>
+<p>＜今回のモデル＞</p>
+<p>目的変数：CT所見に何か異常があるか</p>
+<p>興味のある説明変数：健忘の有無</p>
+<p>として多変量ロジスティック回帰モデルを作成する。</p>
 </div>
-<div id="散布図" class="section level3">
-<h3>散布図</h3>
-<p>ggplotでは要素を追記していく形が基本となる。</p>
-<p>散布図で連続変数同士の関係をみる。</p>
-<p>例えば年齢と収縮期血圧の関係を見たい場合</p>
-<pre class="r"><code>library(ggplot2)
-ggplot(data = study, aes(x = Age, y = SBP, colour = City)) +   
-# ここがベースで、使用するデータ、軸、およびcolourを指定することでカテゴリーごとに色分けできる
-  geom_point(size = 4) +   # 散布図にするという指定
-  xlab(&quot;Age&quot;) +    # x軸ラベルの命名
-  ylab(&quot;SBP&quot;) +    # y軸ラベルの命名
-  ggtitle(&quot;SBP調査&quot;) +  # グラフタイトルの命名
-  theme_bw()  </code></pre>
-<p><img src="../../post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
-<p>A市もB市も同じくらいばらついていそうである。</p>
+<div id="モデルの作成" class="section level3">
+<h3>モデルの作成</h3>
+<pre class="r"><code># モデルの作成
+# glm関数は一般化線形モデルに用いる関数で、familyで自分が使いたい分布を指定する。
+#今回は二値変数がアウトカムなので二項分布に従い、リンク関数はlogitなので以下のようになる
+
+model &lt;- glm(clinically.important.brain.injury ~ amnesia.before  + age.65 + GCS.decrease + GCS.15.2hours + GCS.13 + high.risk + loss.of.consciousness + vomiting,family = binomial(link = &quot;logit&quot;),data = head.injury)</code></pre>
 </div>
-<div id="箱ひげ図" class="section level3">
-<h3>箱ひげ図</h3>
-<p>離散型の変数と連続型の変数の関係をみるために使う。</p>
-<p>箱ひげ図により統計量(平均値、標準偏差)も一緒に図示できる。</p>
-<pre class="r"><code>ggplot(data = study, aes(x = City, y = SBP, colour = City)) +
-  geom_boxplot() +   # ここがboxplotに変わっただけ
-  geom_jitter() +    # 各点のばらつきを追加する
-#  geom_point(size = 3, alpha = 0.5) +
-  xlab(&quot;Age&quot;) + 
-  ylab(&quot;SBP&quot;) + 
-  ggtitle(&quot;SBP調査&quot;) + 
-  theme_bw()</code></pre>
-<p><img src="../../post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
+<div id="結果の確認" class="section level3">
+<h3>結果の確認</h3>
+<pre class="r"><code># モデルの結果確認
+summary(model)</code></pre>
+<pre><code>## 
+## Call:
+## glm(formula = clinically.important.brain.injury ~ amnesia.before + 
+##     age.65 + GCS.decrease + GCS.15.2hours + GCS.13 + high.risk + 
+##     loss.of.consciousness + vomiting, family = binomial(link = &quot;logit&quot;), 
+##     data = head.injury)
+## 
+## Deviance Residuals: 
+##     Min       1Q   Median       3Q      Max  
+## -2.6149  -0.3355  -0.2339  -0.1734   2.9001  
+## 
+## Coefficients:
+##                       Estimate Std. Error z value Pr(&gt;|z|)    
+## (Intercept)            -4.1904     0.1485 -28.211  &lt; 2e-16 ***
+## amnesia.before          0.6055     0.1656   3.656 0.000256 ***
+## age.65                  1.3412     0.1761   7.617 2.60e-14 ***
+## GCS.decrease            0.3901     0.3573   1.092 0.274954    
+## GCS.15.2hours           1.9435     0.1598  12.164  &lt; 2e-16 ***
+## GCS.13                  1.2985     0.2663   4.876 1.09e-06 ***
+## high.risk               1.1237     0.1527   7.360 1.84e-13 ***
+## loss.of.consciousness   0.8733     0.1926   4.534 5.78e-06 ***
+## vomiting                1.2541     0.1865   6.724 1.77e-11 ***
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## (Dispersion parameter for binomial family taken to be 1)
+## 
+##     Null deviance: 1741.6  on 3120  degrees of freedom
+## Residual deviance: 1287.0  on 3112  degrees of freedom
+## AIC: 1305
+## 
+## Number of Fisher Scoring iterations: 6</code></pre>
+<p>各変数の係数を確認する。</p>
+<p>値をオッズ比へ変換する。</p>
+<pre class="r"><code># オッズ比と95%信頼区間の確認
+result_odds &lt;- as.data.frame(cbind(exp(summary(model)$coefficient[,1]),exp(confint(model))
+                                    ,summary(model)$coefficient[,4]))</code></pre>
+<pre><code>## Waiting for profiling to be done...</code></pre>
+<pre class="r"><code># result_oddsというデータフレームの列名を名付ける
+names(result_odds) &lt;- c(&quot;Odds ratio&quot;,&quot;lower 95%CI&quot;,&quot;upper 95%CI&quot;,&quot;P value&quot;)
+# 小数点２桁で結果を表示
+round(result_odds,2)</code></pre>
+<pre><code>##                       Odds ratio lower 95%CI upper 95%CI P value
+## (Intercept)                 0.02        0.01        0.02    0.00
+## amnesia.before              1.83        1.32        2.53    0.00
+## age.65                      3.82        2.70        5.39    0.00
+## GCS.decrease                1.48        0.71        2.91    0.27
+## GCS.15.2hours               6.98        5.10        9.56    0.00
+## GCS.13                      3.66        2.15        6.12    0.00
+## high.risk                   3.08        2.28        4.15    0.00
+## loss.of.consciousness       2.39        1.63        3.47    0.00
+## vomiting                    3.50        2.42        5.03    0.00</code></pre>
 </div>
-<div id="バイオリンプロット" class="section level3">
-<h3>バイオリンプロット</h3>
-<p>バイオリンプロットによりデータの分布の密度も可視化することができる。</p>
-<pre class="r"><code># バイオリンプロットも描くことができる
-ggplot(data = study, aes(x = City, y = SBP, colour = City)) +
-  geom_violin() +
-  xlab(&quot;Age&quot;) + 
-  ylab(&quot;SBP&quot;) + 
-  ggtitle(&quot;SBP調査&quot;) + 
-  theme_bw()</code></pre>
-<p><img src="../../post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
-</div>
-<div id="ヒストグラム" class="section level3">
-<h3>ヒストグラム</h3>
-<p>連続変数などの分布をみる。</p>
-<p>ここでは両方の都市での年齢の分布を示している。</p>
-<pre class="r"><code># ヒストグラム
-ggplot(data = study, aes(x = Age)) +
-  geom_histogram(binwidth = 2) + # ヒストグラム描きます、階級値は2にしますという宣言
-  facet_wrap(~City)  # 群別の図を書くことができる</code></pre>
-<p><img src="../../post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
-</div>
-<div id="棒グラフ" class="section level3">
-<h3>棒グラフ</h3>
-<p>今回のデータでは必要性が乏しいが</p>
-<pre class="r"><code>ggplot(data = study, aes(x = City, y = SBP, fill = Sex)) +
-  geom_bar(stat = &quot;identity&quot;, position = &quot;dodge&quot;) +
-  xlab(&quot;Sex&quot;) +
-  ylab(&quot;SBP&quot;)</code></pre>
-<p><img src="../../post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
+<div id="モデルの評価" class="section level3">
+<h3>モデルの評価</h3>
+<pre class="r"><code>library(pROC)</code></pre>
+<pre><code>## Type &#39;citation(&quot;pROC&quot;)&#39; for a citation.</code></pre>
+<pre><code>## 
+##  次のパッケージを付け加えます: &#39;pROC&#39;</code></pre>
+<pre><code>##  以下のオブジェクトは &#39;package:stats&#39; からマスクされています: 
+## 
+##      cov, smooth, var</code></pre>
+<pre class="r"><code>ROC &lt;- roc(response=head.injury$clinically.important.brain.injury, predictor=model$fitted.values)</code></pre>
+<pre><code>## Setting levels: control = 0, case = 1</code></pre>
+<pre><code>## Setting direction: controls &lt; cases</code></pre>
+<pre class="r"><code>ROC</code></pre>
+<pre><code>## 
+## Call:
+## roc.default(response = head.injury$clinically.important.brain.injury,     predictor = model$fitted.values)
+## 
+## Data: model$fitted.values in 2871 controls (head.injury$clinically.important.brain.injury 0) &lt; 250 cases (head.injury$clinically.important.brain.injury 1).
+## Area under the curve: 0.8387</code></pre>
+<pre class="r"><code>plot(ROC)</code></pre>
+<p><img src="../../post/logi_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+<p>ROC(C統計量)は0.837くらいで今回のモデルの当てはまりはよさそうである。</p>
+<p>「怪我の前の記憶喪失(健忘)」と「CT所見に何かしら異常が見つかるか」の関係をみることが今回の目的であり、<br>
+最終結果はオッズ比 1.83, 95%CI 1.32 - 2.53となり、受傷時の健忘はCTの異常所見の発見に影響があると言える。</p>
 </div>
 
     </div>
@@ -690,11 +771,7 @@ ggplot(data = study, aes(x = Age)) +
 
 <div class="article-tags">
   
-  <a class="badge badge-light" href="../../tag/r-markdown/">R Markdown</a>
-  
-  <a class="badge badge-light" href="../../tag/ggplot/">ggplot</a>
-  
-  <a class="badge badge-light" href="../../tag/regression/">regression</a>
+  <a class="badge badge-light" href="../../tag/glm/">GLM</a>
   
 </div>
 
@@ -711,7 +788,7 @@ ggplot(data = study, aes(x = Age)) +
       
       
       <li>
-        <a href="https://twitter.com/intent/tweet?url=../../post/2015-07-23-r-rmarkdown/&amp;text=R%e3%81%ab%e3%82%88%e3%82%8b%e3%82%b0%e3%83%a9%e3%83%95%e5%9f%ba%e7%a4%8e" target="_blank" rel="noopener" class="share-btn-twitter">
+        <a href="https://twitter.com/intent/tweet?url=../../post/logi/&amp;text=Logistic%e5%9b%9e%e5%b8%b0%e3%81%ae%e5%ae%9f%e8%a3%85" target="_blank" rel="noopener" class="share-btn-twitter">
           <i class="fab fa-twitter"></i>
         </a>
       </li>
@@ -724,7 +801,7 @@ ggplot(data = study, aes(x = Age)) +
       
       
       <li>
-        <a href="https://www.facebook.com/sharer.php?u=/post/2015-07-23-r-rmarkdown/&amp;t=R%e3%81%ab%e3%82%88%e3%82%8b%e3%82%b0%e3%83%a9%e3%83%95%e5%9f%ba%e7%a4%8e" target="_blank" rel="noopener" class="share-btn-facebook">
+        <a href="https://www.facebook.com/sharer.php?u=/post/logi/&amp;t=Logistic%e5%9b%9e%e5%b8%b0%e3%81%ae%e5%ae%9f%e8%a3%85" target="_blank" rel="noopener" class="share-btn-facebook">
           <i class="fab fa-facebook"></i>
         </a>
       </li>
@@ -737,7 +814,7 @@ ggplot(data = study, aes(x = Age)) +
       
       
       <li>
-        <a href="mailto:?subject=R%e3%81%ab%e3%82%88%e3%82%8b%e3%82%b0%e3%83%a9%e3%83%95%e5%9f%ba%e7%a4%8e&amp;body=/post/2015-07-23-r-rmarkdown/" target="_blank" rel="noopener" class="share-btn-email">
+        <a href="mailto:?subject=Logistic%e5%9b%9e%e5%b8%b0%e3%81%ae%e5%ae%9f%e8%a3%85&amp;body=/post/logi/" target="_blank" rel="noopener" class="share-btn-email">
           <i class="fas fa-envelope"></i>
         </a>
       </li>
@@ -750,7 +827,7 @@ ggplot(data = study, aes(x = Age)) +
       
       
       <li>
-        <a href="https://www.linkedin.com/shareArticle?url=../../post/2015-07-23-r-rmarkdown/&amp;title=R%e3%81%ab%e3%82%88%e3%82%8b%e3%82%b0%e3%83%a9%e3%83%95%e5%9f%ba%e7%a4%8e" target="_blank" rel="noopener" class="share-btn-linkedin">
+        <a href="https://www.linkedin.com/shareArticle?url=../../post/logi/&amp;title=Logistic%e5%9b%9e%e5%b8%b0%e3%81%ae%e5%ae%9f%e8%a3%85" target="_blank" rel="noopener" class="share-btn-linkedin">
           <i class="fab fa-linkedin-in"></i>
         </a>
       </li>
@@ -763,7 +840,7 @@ ggplot(data = study, aes(x = Age)) +
       
       
       <li>
-        <a href="whatsapp://send?text=R%e3%81%ab%e3%82%88%e3%82%8b%e3%82%b0%e3%83%a9%e3%83%95%e5%9f%ba%e7%a4%8e%20/post/2015-07-23-r-rmarkdown/" target="_blank" rel="noopener" class="share-btn-whatsapp">
+        <a href="whatsapp://send?text=Logistic%e5%9b%9e%e5%b8%b0%e3%81%ae%e5%ae%9f%e8%a3%85%20/post/logi/" target="_blank" rel="noopener" class="share-btn-whatsapp">
           <i class="fab fa-whatsapp"></i>
         </a>
       </li>
@@ -776,7 +853,7 @@ ggplot(data = study, aes(x = Age)) +
       
       
       <li>
-        <a href="https://service.weibo.com/share/share.php?url=../../post/2015-07-23-r-rmarkdown/&amp;title=R%e3%81%ab%e3%82%88%e3%82%8b%e3%82%b0%e3%83%a9%e3%83%95%e5%9f%ba%e7%a4%8e" target="_blank" rel="noopener" class="share-btn-weibo">
+        <a href="https://service.weibo.com/share/share.php?url=../../post/logi/&amp;title=Logistic%e5%9b%9e%e5%b8%b0%e3%81%ae%e5%ae%9f%e8%a3%85" target="_blank" rel="noopener" class="share-btn-weibo">
           <i class="fab fa-weibo"></i>
         </a>
       </li>
@@ -827,7 +904,7 @@ ggplot(data = study, aes(x = Age)) +
       
       <li><a href="../../post/linear/">線形回帰モデルの基礎</a></li>
       
-      <li><a href="../../post/logi/">Logistic回帰の実装</a></li>
+      <li><a href="../../post/2015-07-23-r-rmarkdown/">Rによるグラフ基礎</a></li>
       
     </ul>
   </div>

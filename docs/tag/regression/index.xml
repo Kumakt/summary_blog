@@ -5,7 +5,7 @@
     <link>/tag/regression/</link>
       <atom:link href="/tag/regression/index.xml" rel="self" type="application/rss+xml" />
     <description>regression</description>
-    <generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><lastBuildDate>Mon, 13 Jul 2020 21:13:14 -0500</lastBuildDate>
+    <generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><lastBuildDate>Tue, 14 Jul 2020 22:57:37 +0900</lastBuildDate>
     <image>
       <url>/images/icon_hu0b7a4cb9992c9ac0e91bd28ffd38dd00_9727_512x512_fill_lanczos_center_2.png</url>
       <title>regression</title>
@@ -13,114 +13,9 @@
     </image>
     
     <item>
-      <title>Rによるグラフ基礎</title>
-      <link>/post/2015-07-23-r-rmarkdown/</link>
-      <pubDate>Mon, 13 Jul 2020 21:13:14 -0500</pubDate>
-      <guid>/post/2015-07-23-r-rmarkdown/</guid>
-      <description>
-
-
-&lt;div id=&#34;一般事項&#34; class=&#34;section level3&#34;&gt;
-&lt;h3&gt;一般事項&lt;/h3&gt;
-&lt;p&gt;Rにはグラフを書く上でおもに２つの方法がある。&lt;/p&gt;
-&lt;p&gt;デフォルトのgraphicsで扱うplot関数などとggplot2パッケージによる方法である。&lt;/p&gt;
-&lt;p&gt;ここでは医学系でよく扱うグラフをggplot2を実装する。&lt;/p&gt;
-&lt;/div&gt;
-&lt;div id=&#34;データの準備&#34; class=&#34;section level3&#34;&gt;
-&lt;h3&gt;データの準備&lt;/h3&gt;
-&lt;p&gt;あるA市とB市で収縮期血圧を調査した設定で架空データを作成する。&lt;/p&gt;
-&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;set.seed(125) # 乱数の固定のシード
-a &amp;lt;- rnorm(n = 100, mean = 140, sd = 10)
-b &amp;lt;- rnorm(n = 100, mean = 60, sd = 5 )
-c &amp;lt;- rep(c(&amp;quot;A_city&amp;quot;,&amp;quot;B_city&amp;quot;),50)
-d &amp;lt;- rbinom(n = 100, size = 1, prob = 0.6)  # ここでは男性の割合を0.6として二項分布によるランダム値の作成
-study &amp;lt;- data.frame(a,b,c,d)
-name  &amp;lt;- c(&amp;quot;SBP&amp;quot;, &amp;quot;Age&amp;quot;, &amp;quot;City&amp;quot;, &amp;quot;Sex&amp;quot;) 
-colnames(study) &amp;lt;- name
-# 性別は二値なのでデータ型を変換する
-study$Sex &amp;lt;- as.factor(study$Sex)
-study$Sex &amp;lt;- factor(study$Sex,levels = c(1,0),
-                  labels = c(&amp;quot;Male&amp;quot;,&amp;quot;Female&amp;quot;))&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-&lt;div id=&#34;データの確認&#34; class=&#34;section level3&#34;&gt;
-&lt;h3&gt;データの確認&lt;/h3&gt;
-&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;summary(study)
-##       SBP             Age            City        Sex    
-##  Min.   :103.9   Min.   :46.80   A_city:50   Male  :63  
-##  1st Qu.:134.6   1st Qu.:56.90   B_city:50   Female:37  
-##  Median :141.7   Median :59.93                          
-##  Mean   :141.0   Mean   :60.09                          
-##  3rd Qu.:147.9   3rd Qu.:63.14                          
-##  Max.   :164.0   Max.   :72.41&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-&lt;div id=&#34;散布図&#34; class=&#34;section level3&#34;&gt;
-&lt;h3&gt;散布図&lt;/h3&gt;
-&lt;p&gt;ggplotでは要素を追記していく形が基本となる。&lt;/p&gt;
-&lt;p&gt;散布図で連続変数同士の関係をみる。&lt;/p&gt;
-&lt;p&gt;例えば年齢と収縮期血圧の関係を見たい場合&lt;/p&gt;
-&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;library(ggplot2)
-ggplot(data = study, aes(x = Age, y = SBP, colour = City)) +   
-# ここがベースで、使用するデータ、軸、およびcolourを指定することでカテゴリーごとに色分けできる
-  geom_point(size = 4) +   # 散布図にするという指定
-  xlab(&amp;quot;Age&amp;quot;) +    # x軸ラベルの命名
-  ylab(&amp;quot;SBP&amp;quot;) +    # y軸ラベルの命名
-  ggtitle(&amp;quot;SBP調査&amp;quot;) +  # グラフタイトルの命名
-  theme_bw()  &lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img src=&#34;../../post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-3-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
-&lt;p&gt;A市もB市も同じくらいばらついていそうである。&lt;/p&gt;
-&lt;/div&gt;
-&lt;div id=&#34;箱ひげ図&#34; class=&#34;section level3&#34;&gt;
-&lt;h3&gt;箱ひげ図&lt;/h3&gt;
-&lt;p&gt;離散型の変数と連続型の変数の関係をみるために使う。&lt;/p&gt;
-&lt;p&gt;箱ひげ図により統計量(平均値、標準偏差)も一緒に図示できる。&lt;/p&gt;
-&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;ggplot(data = study, aes(x = City, y = SBP, colour = City)) +
-  geom_boxplot() +   # ここがboxplotに変わっただけ
-  geom_jitter() +    # 各点のばらつきを追加する
-#  geom_point(size = 3, alpha = 0.5) +
-  xlab(&amp;quot;Age&amp;quot;) + 
-  ylab(&amp;quot;SBP&amp;quot;) + 
-  ggtitle(&amp;quot;SBP調査&amp;quot;) + 
-  theme_bw()&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img src=&#34;../../post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-4-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
-&lt;/div&gt;
-&lt;div id=&#34;バイオリンプロット&#34; class=&#34;section level3&#34;&gt;
-&lt;h3&gt;バイオリンプロット&lt;/h3&gt;
-&lt;p&gt;バイオリンプロットによりデータの分布の密度も可視化することができる。&lt;/p&gt;
-&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;# バイオリンプロットも描くことができる
-ggplot(data = study, aes(x = City, y = SBP, colour = City)) +
-  geom_violin() +
-  xlab(&amp;quot;Age&amp;quot;) + 
-  ylab(&amp;quot;SBP&amp;quot;) + 
-  ggtitle(&amp;quot;SBP調査&amp;quot;) + 
-  theme_bw()&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img src=&#34;../../post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-5-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
-&lt;/div&gt;
-&lt;div id=&#34;ヒストグラム&#34; class=&#34;section level3&#34;&gt;
-&lt;h3&gt;ヒストグラム&lt;/h3&gt;
-&lt;p&gt;連続変数などの分布をみる。&lt;/p&gt;
-&lt;p&gt;ここでは両方の都市での年齢の分布を示している。&lt;/p&gt;
-&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;# ヒストグラム
-ggplot(data = study, aes(x = Age)) +
-  geom_histogram(binwidth = 2) + # ヒストグラム描きます、階級値は2にしますという宣言
-  facet_wrap(~City)  # 群別の図を書くことができる&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img src=&#34;../../post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-6-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
-&lt;/div&gt;
-&lt;div id=&#34;棒グラフ&#34; class=&#34;section level3&#34;&gt;
-&lt;h3&gt;棒グラフ&lt;/h3&gt;
-&lt;p&gt;今回のデータでは必要性が乏しいが&lt;/p&gt;
-&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;ggplot(data = study, aes(x = City, y = SBP, fill = Sex)) +
-  geom_bar(stat = &amp;quot;identity&amp;quot;, position = &amp;quot;dodge&amp;quot;) +
-  xlab(&amp;quot;Sex&amp;quot;) +
-  ylab(&amp;quot;SBP&amp;quot;)&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img src=&#34;../../post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-7-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
-&lt;/div&gt;
-</description>
-    </item>
-    
-    <item>
       <title>線形回帰モデルの基礎</title>
       <link>/post/linear/</link>
-      <pubDate>Mon, 13 Jul 2020 22:57:37 +0900</pubDate>
+      <pubDate>Tue, 14 Jul 2020 22:57:37 +0900</pubDate>
       <guid>/post/linear/</guid>
       <description>
 
@@ -268,6 +163,111 @@ autoplot(model, smooth.colour = NA)&lt;/code&gt;&lt;/pre&gt;
 十分に説明できていないことになる。&lt;/p&gt;
 &lt;p&gt;実際の臨床でも血圧を予測するうえで他に、家族歴など様々な要因が重要であることは当然であり、年齢だけで
 十分に説明できないということは妥当であるといえる。&lt;/p&gt;
+&lt;/div&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Rによるグラフ基礎</title>
+      <link>/post/2015-07-23-r-rmarkdown/</link>
+      <pubDate>Mon, 13 Jul 2020 21:13:14 -0500</pubDate>
+      <guid>/post/2015-07-23-r-rmarkdown/</guid>
+      <description>
+
+
+&lt;div id=&#34;一般事項&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;一般事項&lt;/h3&gt;
+&lt;p&gt;Rにはグラフを書く上でおもに２つの方法がある。&lt;/p&gt;
+&lt;p&gt;デフォルトのgraphicsで扱うplot関数などとggplot2パッケージによる方法である。&lt;/p&gt;
+&lt;p&gt;ここでは医学系でよく扱うグラフをggplot2を実装する。&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;データの準備&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;データの準備&lt;/h3&gt;
+&lt;p&gt;あるA市とB市で収縮期血圧を調査した設定で架空データを作成する。&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;set.seed(125) # 乱数の固定のシード
+a &amp;lt;- rnorm(n = 100, mean = 140, sd = 10)
+b &amp;lt;- rnorm(n = 100, mean = 60, sd = 5 )
+c &amp;lt;- rep(c(&amp;quot;A_city&amp;quot;,&amp;quot;B_city&amp;quot;),50)
+d &amp;lt;- rbinom(n = 100, size = 1, prob = 0.6)  # ここでは男性の割合を0.6として二項分布によるランダム値の作成
+study &amp;lt;- data.frame(a,b,c,d)
+name  &amp;lt;- c(&amp;quot;SBP&amp;quot;, &amp;quot;Age&amp;quot;, &amp;quot;City&amp;quot;, &amp;quot;Sex&amp;quot;) 
+colnames(study) &amp;lt;- name
+# 性別は二値なのでデータ型を変換する
+study$Sex &amp;lt;- as.factor(study$Sex)
+study$Sex &amp;lt;- factor(study$Sex,levels = c(1,0),
+                  labels = c(&amp;quot;Male&amp;quot;,&amp;quot;Female&amp;quot;))&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;div id=&#34;データの確認&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;データの確認&lt;/h3&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;summary(study)
+##       SBP             Age            City        Sex    
+##  Min.   :103.9   Min.   :46.80   A_city:50   Male  :63  
+##  1st Qu.:134.6   1st Qu.:56.90   B_city:50   Female:37  
+##  Median :141.7   Median :59.93                          
+##  Mean   :141.0   Mean   :60.09                          
+##  3rd Qu.:147.9   3rd Qu.:63.14                          
+##  Max.   :164.0   Max.   :72.41&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;div id=&#34;散布図&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;散布図&lt;/h3&gt;
+&lt;p&gt;ggplotでは要素を追記していく形が基本となる。&lt;/p&gt;
+&lt;p&gt;散布図で連続変数同士の関係をみる。&lt;/p&gt;
+&lt;p&gt;例えば年齢と収縮期血圧の関係を見たい場合&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;library(ggplot2)
+ggplot(data = study, aes(x = Age, y = SBP, colour = City)) +   
+# ここがベースで、使用するデータ、軸、およびcolourを指定することでカテゴリーごとに色分けできる
+  geom_point(size = 4) +   # 散布図にするという指定
+  xlab(&amp;quot;Age&amp;quot;) +    # x軸ラベルの命名
+  ylab(&amp;quot;SBP&amp;quot;) +    # y軸ラベルの命名
+  ggtitle(&amp;quot;SBP調査&amp;quot;) +  # グラフタイトルの命名
+  theme_bw()  &lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;../../post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-3-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;A市もB市も同じくらいばらついていそうである。&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;箱ひげ図&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;箱ひげ図&lt;/h3&gt;
+&lt;p&gt;離散型の変数と連続型の変数の関係をみるために使う。&lt;/p&gt;
+&lt;p&gt;箱ひげ図により統計量(平均値、標準偏差)も一緒に図示できる。&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;ggplot(data = study, aes(x = City, y = SBP, colour = City)) +
+  geom_boxplot() +   # ここがboxplotに変わっただけ
+  geom_jitter() +    # 各点のばらつきを追加する
+#  geom_point(size = 3, alpha = 0.5) +
+  xlab(&amp;quot;Age&amp;quot;) + 
+  ylab(&amp;quot;SBP&amp;quot;) + 
+  ggtitle(&amp;quot;SBP調査&amp;quot;) + 
+  theme_bw()&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;../../post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-4-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;バイオリンプロット&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;バイオリンプロット&lt;/h3&gt;
+&lt;p&gt;バイオリンプロットによりデータの分布の密度も可視化することができる。&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;# バイオリンプロットも描くことができる
+ggplot(data = study, aes(x = City, y = SBP, colour = City)) +
+  geom_violin() +
+  xlab(&amp;quot;Age&amp;quot;) + 
+  ylab(&amp;quot;SBP&amp;quot;) + 
+  ggtitle(&amp;quot;SBP調査&amp;quot;) + 
+  theme_bw()&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;../../post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-5-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;ヒストグラム&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;ヒストグラム&lt;/h3&gt;
+&lt;p&gt;連続変数などの分布をみる。&lt;/p&gt;
+&lt;p&gt;ここでは両方の都市での年齢の分布を示している。&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;# ヒストグラム
+ggplot(data = study, aes(x = Age)) +
+  geom_histogram(binwidth = 2) + # ヒストグラム描きます、階級値は2にしますという宣言
+  facet_wrap(~City)  # 群別の図を書くことができる&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;../../post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-6-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;棒グラフ&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;棒グラフ&lt;/h3&gt;
+&lt;p&gt;今回のデータでは必要性が乏しいが&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;ggplot(data = study, aes(x = City, y = SBP, fill = Sex)) +
+  geom_bar(stat = &amp;quot;identity&amp;quot;, position = &amp;quot;dodge&amp;quot;) +
+  xlab(&amp;quot;Sex&amp;quot;) +
+  ylab(&amp;quot;SBP&amp;quot;)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;../../post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-7-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
 &lt;/div&gt;
 </description>
     </item>

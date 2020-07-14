@@ -5,7 +5,7 @@
     <link>/category/r/</link>
       <atom:link href="/category/r/index.xml" rel="self" type="application/rss+xml" />
     <description>R</description>
-    <generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><lastBuildDate>Mon, 13 Jul 2020 21:13:14 -0500</lastBuildDate>
+    <generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><lastBuildDate>Tue, 14 Jul 2020 22:57:37 +0900</lastBuildDate>
     <image>
       <url>/images/icon_hu0b7a4cb9992c9ac0e91bd28ffd38dd00_9727_512x512_fill_lanczos_center_2.png</url>
       <title>R</title>
@@ -13,114 +13,9 @@
     </image>
     
     <item>
-      <title>Rによるグラフ基礎</title>
-      <link>/post/2015-07-23-r-rmarkdown/</link>
-      <pubDate>Mon, 13 Jul 2020 21:13:14 -0500</pubDate>
-      <guid>/post/2015-07-23-r-rmarkdown/</guid>
-      <description>
-
-
-&lt;div id=&#34;一般事項&#34; class=&#34;section level3&#34;&gt;
-&lt;h3&gt;一般事項&lt;/h3&gt;
-&lt;p&gt;Rにはグラフを書く上でおもに２つの方法がある。&lt;/p&gt;
-&lt;p&gt;デフォルトのgraphicsで扱うplot関数などとggplot2パッケージによる方法である。&lt;/p&gt;
-&lt;p&gt;ここでは医学系でよく扱うグラフをggplot2を実装する。&lt;/p&gt;
-&lt;/div&gt;
-&lt;div id=&#34;データの準備&#34; class=&#34;section level3&#34;&gt;
-&lt;h3&gt;データの準備&lt;/h3&gt;
-&lt;p&gt;あるA市とB市で収縮期血圧を調査した設定で架空データを作成する。&lt;/p&gt;
-&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;set.seed(125) # 乱数の固定のシード
-a &amp;lt;- rnorm(n = 100, mean = 140, sd = 10)
-b &amp;lt;- rnorm(n = 100, mean = 60, sd = 5 )
-c &amp;lt;- rep(c(&amp;quot;A_city&amp;quot;,&amp;quot;B_city&amp;quot;),50)
-d &amp;lt;- rbinom(n = 100, size = 1, prob = 0.6)  # ここでは男性の割合を0.6として二項分布によるランダム値の作成
-study &amp;lt;- data.frame(a,b,c,d)
-name  &amp;lt;- c(&amp;quot;SBP&amp;quot;, &amp;quot;Age&amp;quot;, &amp;quot;City&amp;quot;, &amp;quot;Sex&amp;quot;) 
-colnames(study) &amp;lt;- name
-# 性別は二値なのでデータ型を変換する
-study$Sex &amp;lt;- as.factor(study$Sex)
-study$Sex &amp;lt;- factor(study$Sex,levels = c(1,0),
-                  labels = c(&amp;quot;Male&amp;quot;,&amp;quot;Female&amp;quot;))&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-&lt;div id=&#34;データの確認&#34; class=&#34;section level3&#34;&gt;
-&lt;h3&gt;データの確認&lt;/h3&gt;
-&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;summary(study)
-##       SBP             Age            City        Sex    
-##  Min.   :103.9   Min.   :46.80   A_city:50   Male  :63  
-##  1st Qu.:134.6   1st Qu.:56.90   B_city:50   Female:37  
-##  Median :141.7   Median :59.93                          
-##  Mean   :141.0   Mean   :60.09                          
-##  3rd Qu.:147.9   3rd Qu.:63.14                          
-##  Max.   :164.0   Max.   :72.41&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-&lt;div id=&#34;散布図&#34; class=&#34;section level3&#34;&gt;
-&lt;h3&gt;散布図&lt;/h3&gt;
-&lt;p&gt;ggplotでは要素を追記していく形が基本となる。&lt;/p&gt;
-&lt;p&gt;散布図で連続変数同士の関係をみる。&lt;/p&gt;
-&lt;p&gt;例えば年齢と収縮期血圧の関係を見たい場合&lt;/p&gt;
-&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;library(ggplot2)
-ggplot(data = study, aes(x = Age, y = SBP, colour = City)) +   
-# ここがベースで、使用するデータ、軸、およびcolourを指定することでカテゴリーごとに色分けできる
-  geom_point(size = 4) +   # 散布図にするという指定
-  xlab(&amp;quot;Age&amp;quot;) +    # x軸ラベルの命名
-  ylab(&amp;quot;SBP&amp;quot;) +    # y軸ラベルの命名
-  ggtitle(&amp;quot;SBP調査&amp;quot;) +  # グラフタイトルの命名
-  theme_bw()  &lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img src=&#34;../../post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-3-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
-&lt;p&gt;A市もB市も同じくらいばらついていそうである。&lt;/p&gt;
-&lt;/div&gt;
-&lt;div id=&#34;箱ひげ図&#34; class=&#34;section level3&#34;&gt;
-&lt;h3&gt;箱ひげ図&lt;/h3&gt;
-&lt;p&gt;離散型の変数と連続型の変数の関係をみるために使う。&lt;/p&gt;
-&lt;p&gt;箱ひげ図により統計量(平均値、標準偏差)も一緒に図示できる。&lt;/p&gt;
-&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;ggplot(data = study, aes(x = City, y = SBP, colour = City)) +
-  geom_boxplot() +   # ここがboxplotに変わっただけ
-  geom_jitter() +    # 各点のばらつきを追加する
-#  geom_point(size = 3, alpha = 0.5) +
-  xlab(&amp;quot;Age&amp;quot;) + 
-  ylab(&amp;quot;SBP&amp;quot;) + 
-  ggtitle(&amp;quot;SBP調査&amp;quot;) + 
-  theme_bw()&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img src=&#34;../../post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-4-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
-&lt;/div&gt;
-&lt;div id=&#34;バイオリンプロット&#34; class=&#34;section level3&#34;&gt;
-&lt;h3&gt;バイオリンプロット&lt;/h3&gt;
-&lt;p&gt;バイオリンプロットによりデータの分布の密度も可視化することができる。&lt;/p&gt;
-&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;# バイオリンプロットも描くことができる
-ggplot(data = study, aes(x = City, y = SBP, colour = City)) +
-  geom_violin() +
-  xlab(&amp;quot;Age&amp;quot;) + 
-  ylab(&amp;quot;SBP&amp;quot;) + 
-  ggtitle(&amp;quot;SBP調査&amp;quot;) + 
-  theme_bw()&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img src=&#34;../../post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-5-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
-&lt;/div&gt;
-&lt;div id=&#34;ヒストグラム&#34; class=&#34;section level3&#34;&gt;
-&lt;h3&gt;ヒストグラム&lt;/h3&gt;
-&lt;p&gt;連続変数などの分布をみる。&lt;/p&gt;
-&lt;p&gt;ここでは両方の都市での年齢の分布を示している。&lt;/p&gt;
-&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;# ヒストグラム
-ggplot(data = study, aes(x = Age)) +
-  geom_histogram(binwidth = 2) + # ヒストグラム描きます、階級値は2にしますという宣言
-  facet_wrap(~City)  # 群別の図を書くことができる&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img src=&#34;../../post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-6-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
-&lt;/div&gt;
-&lt;div id=&#34;棒グラフ&#34; class=&#34;section level3&#34;&gt;
-&lt;h3&gt;棒グラフ&lt;/h3&gt;
-&lt;p&gt;今回のデータでは必要性が乏しいが&lt;/p&gt;
-&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;ggplot(data = study, aes(x = City, y = SBP, fill = Sex)) +
-  geom_bar(stat = &amp;quot;identity&amp;quot;, position = &amp;quot;dodge&amp;quot;) +
-  xlab(&amp;quot;Sex&amp;quot;) +
-  ylab(&amp;quot;SBP&amp;quot;)&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img src=&#34;../../post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-7-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
-&lt;/div&gt;
-</description>
-    </item>
-    
-    <item>
       <title>線形回帰モデルの基礎</title>
       <link>/post/linear/</link>
-      <pubDate>Mon, 13 Jul 2020 22:57:37 +0900</pubDate>
+      <pubDate>Tue, 14 Jul 2020 22:57:37 +0900</pubDate>
       <guid>/post/linear/</guid>
       <description>
 
@@ -268,6 +163,294 @@ autoplot(model, smooth.colour = NA)&lt;/code&gt;&lt;/pre&gt;
 十分に説明できていないことになる。&lt;/p&gt;
 &lt;p&gt;実際の臨床でも血圧を予測するうえで他に、家族歴など様々な要因が重要であることは当然であり、年齢だけで
 十分に説明できないということは妥当であるといえる。&lt;/p&gt;
+&lt;/div&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Logistic回帰の実装</title>
+      <link>/post/logi/</link>
+      <pubDate>Tue, 14 Jul 2020 22:46:04 +0900</pubDate>
+      <guid>/post/logi/</guid>
+      <description>
+
+
+&lt;div id=&#34;パッケージの読み込み&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;パッケージの読み込み&lt;/h3&gt;
+&lt;p&gt;今回はパッケージに付属のデータを用いる。&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;# 必要なパッケージの読み込み
+library(ggplot2)
+library(dplyr)
+library(ggfortify)
+library(DAAG)&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;div id=&#34;データの確認&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;データの確認&lt;/h3&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;# データの確認
+data(&amp;quot;head.injury&amp;quot;)
+summary(head.injury)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;##      age.65      amnesia.before   basal.skull.fracture  GCS.decrease    
+##  Min.   :0.000   Min.   :0.0000   Min.   :0.00000      Min.   :0.00000  
+##  1st Qu.:0.000   1st Qu.:0.0000   1st Qu.:0.00000      1st Qu.:0.00000  
+##  Median :0.000   Median :0.0000   Median :0.00000      Median :0.00000  
+##  Mean   :0.116   Mean   :0.2047   Mean   :0.06985      Mean   :0.02275  
+##  3rd Qu.:0.000   3rd Qu.:0.0000   3rd Qu.:0.00000      3rd Qu.:0.00000  
+##  Max.   :1.000   Max.   :1.0000   Max.   :1.00000      Max.   :1.00000  
+##      GCS.13        GCS.15.2hours      high.risk      loss.of.consciousness
+##  Min.   :0.00000   Min.   :0.0000   Min.   :0.0000   Min.   :0.0000       
+##  1st Qu.:0.00000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.0000       
+##  Median :0.00000   Median :0.0000   Median :0.0000   Median :0.0000       
+##  Mean   :0.03749   Mean   :0.1266   Mean   :0.2429   Mean   :0.1118       
+##  3rd Qu.:0.00000   3rd Qu.:0.0000   3rd Qu.:0.0000   3rd Qu.:0.0000       
+##  Max.   :1.00000   Max.   :1.0000   Max.   :1.0000   Max.   :1.0000       
+##  open.skull.fracture    vomiting       clinically.important.brain.injury
+##  Min.   :0.00000     Min.   :0.00000   Min.   :0.0000                   
+##  1st Qu.:0.00000     1st Qu.:0.00000   1st Qu.:0.0000                   
+##  Median :0.00000     Median :0.00000   Median :0.0000                   
+##  Mean   :0.03685     Mean   :0.09869   Mean   :0.0801                   
+##  3rd Qu.:0.00000     3rd Qu.:0.00000   3rd Qu.:0.0000                   
+##  Max.   :1.00000     Max.   :1.00000   Max.   :1.0000&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;str(head.injury)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## &amp;#39;data.frame&amp;#39;:    3121 obs. of  11 variables:
+##  $ age.65                           : num  0 0 0 0 0 0 0 0 1 0 ...
+##  $ amnesia.before                   : num  1 0 0 0 0 1 0 0 0 1 ...
+##  $ basal.skull.fracture             : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ GCS.decrease                     : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ GCS.13                           : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ GCS.15.2hours                    : num  0 0 0 1 1 0 0 0 0 0 ...
+##  $ high.risk                        : num  0 0 0 0 0 0 0 0 1 0 ...
+##  $ loss.of.consciousness            : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ open.skull.fracture              : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ vomiting                         : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ clinically.important.brain.injury: num  0 0 0 0 0 0 0 0 0 0 ...&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;## 分布や欠損、各変数の型を確認しておく&lt;/code&gt;&lt;/pre&gt;
+&lt;ul&gt;
+&lt;li&gt;DAAGパッケージに付属のデータセット&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;軽度の頭部外傷のデータセット&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;3121名、11列をもつ。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;以下、変数名&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;age.65：0 = under 65, 1 = over 65&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;amnesia.before : 受傷前についての健忘(記憶があるか)
+amnesia before impact (less than 30 minutes = 0, more than 30 minutes =1).&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;basal.skull.fracture : 頭蓋亭骨折(0 = no fracture, 1 = fracture).&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;GCS.decrease : 意識レベル低下
+Glasgow Coma Scale decrease (0 = no deterioration, 1 = deterioration).&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;GCS.13 : 最初の意識レベル initial Glasgow Coma Scale (0 = not ‘13’, 1 = ‘13’).&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;GCS.15.2hours : けがをして2時間後の意識レベル
+Glasgow Coma Scale after 2 hours (0 = not ‘15’, 1 = ‘15’).&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;high.risk : 神経学的な介入が必要かどうか医師による判断
+assessed by clinician as high risk for neurological intervention (0 = not high risk, 1 = high risk).&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;loss.of.consciousness : 意識消失の有無(0 = conscious, 1 = loss of consciousness).&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;open.skull.fracture : 開放性頭蓋骨骨折(0 = no fracture, 1 = fracture)&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;vomiting : 嘔吐の有無(0 = no vomiting, 1 = vomiting)&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;clinically.important.brain.injury : CTで臨床的に重要な急性期の脳所見があるかどうか
+any acute brain finding revealed on CT (0 = not present, 1 = present).&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;References&gt;&lt;/p&gt;
+&lt;p&gt;Stiell, I.G., Wells, G.A., Vandemheen, K., Clement, C., Lesiuk, H., Laupacis, A., McKnight, R.D., Verbee, R., Brison, R., Cass, D., Eisenhauer, M., Greenberg, G.H., and Worthington, J. (2001) The Canadian CT Head Rule for Patients with Minor Head Injury, The Lancet. 357: 1391-1396.&lt;/p&gt;
+&lt;p&gt;＜今回のモデル＞&lt;/p&gt;
+&lt;p&gt;目的変数：CT所見に何か異常があるか&lt;/p&gt;
+&lt;p&gt;興味のある説明変数：健忘の有無&lt;/p&gt;
+&lt;p&gt;として多変量ロジスティック回帰モデルを作成する。&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;モデルの作成&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;モデルの作成&lt;/h3&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;# モデルの作成
+# glm関数は一般化線形モデルに用いる関数で、familyで自分が使いたい分布を指定する。
+#今回は二値変数がアウトカムなので二項分布に従い、リンク関数はlogitなので以下のようになる
+
+model &amp;lt;- glm(clinically.important.brain.injury ~ amnesia.before  + age.65 + GCS.decrease + GCS.15.2hours + GCS.13 + high.risk + loss.of.consciousness + vomiting,family = binomial(link = &amp;quot;logit&amp;quot;),data = head.injury)&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;div id=&#34;結果の確認&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;結果の確認&lt;/h3&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;# モデルの結果確認
+summary(model)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## 
+## Call:
+## glm(formula = clinically.important.brain.injury ~ amnesia.before + 
+##     age.65 + GCS.decrease + GCS.15.2hours + GCS.13 + high.risk + 
+##     loss.of.consciousness + vomiting, family = binomial(link = &amp;quot;logit&amp;quot;), 
+##     data = head.injury)
+## 
+## Deviance Residuals: 
+##     Min       1Q   Median       3Q      Max  
+## -2.6149  -0.3355  -0.2339  -0.1734   2.9001  
+## 
+## Coefficients:
+##                       Estimate Std. Error z value Pr(&amp;gt;|z|)    
+## (Intercept)            -4.1904     0.1485 -28.211  &amp;lt; 2e-16 ***
+## amnesia.before          0.6055     0.1656   3.656 0.000256 ***
+## age.65                  1.3412     0.1761   7.617 2.60e-14 ***
+## GCS.decrease            0.3901     0.3573   1.092 0.274954    
+## GCS.15.2hours           1.9435     0.1598  12.164  &amp;lt; 2e-16 ***
+## GCS.13                  1.2985     0.2663   4.876 1.09e-06 ***
+## high.risk               1.1237     0.1527   7.360 1.84e-13 ***
+## loss.of.consciousness   0.8733     0.1926   4.534 5.78e-06 ***
+## vomiting                1.2541     0.1865   6.724 1.77e-11 ***
+## ---
+## Signif. codes:  0 &amp;#39;***&amp;#39; 0.001 &amp;#39;**&amp;#39; 0.01 &amp;#39;*&amp;#39; 0.05 &amp;#39;.&amp;#39; 0.1 &amp;#39; &amp;#39; 1
+## 
+## (Dispersion parameter for binomial family taken to be 1)
+## 
+##     Null deviance: 1741.6  on 3120  degrees of freedom
+## Residual deviance: 1287.0  on 3112  degrees of freedom
+## AIC: 1305
+## 
+## Number of Fisher Scoring iterations: 6&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;各変数の係数を確認する。&lt;/p&gt;
+&lt;p&gt;値をオッズ比へ変換する。&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;# オッズ比と95%信頼区間の確認
+result_odds &amp;lt;- as.data.frame(cbind(exp(summary(model)$coefficient[,1]),exp(confint(model))
+                                    ,summary(model)$coefficient[,4]))&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## Waiting for profiling to be done...&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;# result_oddsというデータフレームの列名を名付ける
+names(result_odds) &amp;lt;- c(&amp;quot;Odds ratio&amp;quot;,&amp;quot;lower 95%CI&amp;quot;,&amp;quot;upper 95%CI&amp;quot;,&amp;quot;P value&amp;quot;)
+# 小数点２桁で結果を表示
+round(result_odds,2)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;##                       Odds ratio lower 95%CI upper 95%CI P value
+## (Intercept)                 0.02        0.01        0.02    0.00
+## amnesia.before              1.83        1.32        2.53    0.00
+## age.65                      3.82        2.70        5.39    0.00
+## GCS.decrease                1.48        0.71        2.91    0.27
+## GCS.15.2hours               6.98        5.10        9.56    0.00
+## GCS.13                      3.66        2.15        6.12    0.00
+## high.risk                   3.08        2.28        4.15    0.00
+## loss.of.consciousness       2.39        1.63        3.47    0.00
+## vomiting                    3.50        2.42        5.03    0.00&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;div id=&#34;モデルの評価&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;モデルの評価&lt;/h3&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;library(pROC)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## Type &amp;#39;citation(&amp;quot;pROC&amp;quot;)&amp;#39; for a citation.&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## 
+##  次のパッケージを付け加えます: &amp;#39;pROC&amp;#39;&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;##  以下のオブジェクトは &amp;#39;package:stats&amp;#39; からマスクされています: 
+## 
+##      cov, smooth, var&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;ROC &amp;lt;- roc(response=head.injury$clinically.important.brain.injury, predictor=model$fitted.values)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## Setting levels: control = 0, case = 1&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## Setting direction: controls &amp;lt; cases&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;ROC&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## 
+## Call:
+## roc.default(response = head.injury$clinically.important.brain.injury,     predictor = model$fitted.values)
+## 
+## Data: model$fitted.values in 2871 controls (head.injury$clinically.important.brain.injury 0) &amp;lt; 250 cases (head.injury$clinically.important.brain.injury 1).
+## Area under the curve: 0.8387&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;plot(ROC)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;../../post/logi_files/figure-html/unnamed-chunk-6-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;ROC(C統計量)は0.837くらいで今回のモデルの当てはまりはよさそうである。&lt;/p&gt;
+&lt;p&gt;「怪我の前の記憶喪失(健忘)」と「CT所見に何かしら異常が見つかるか」の関係をみることが今回の目的であり、&lt;br&gt;
+最終結果はオッズ比 1.83, 95%CI 1.32 - 2.53となり、受傷時の健忘はCTの異常所見の発見に影響があると言える。&lt;/p&gt;
+&lt;/div&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Rによるグラフ基礎</title>
+      <link>/post/2015-07-23-r-rmarkdown/</link>
+      <pubDate>Mon, 13 Jul 2020 21:13:14 -0500</pubDate>
+      <guid>/post/2015-07-23-r-rmarkdown/</guid>
+      <description>
+
+
+&lt;div id=&#34;一般事項&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;一般事項&lt;/h3&gt;
+&lt;p&gt;Rにはグラフを書く上でおもに２つの方法がある。&lt;/p&gt;
+&lt;p&gt;デフォルトのgraphicsで扱うplot関数などとggplot2パッケージによる方法である。&lt;/p&gt;
+&lt;p&gt;ここでは医学系でよく扱うグラフをggplot2を実装する。&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;データの準備&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;データの準備&lt;/h3&gt;
+&lt;p&gt;あるA市とB市で収縮期血圧を調査した設定で架空データを作成する。&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;set.seed(125) # 乱数の固定のシード
+a &amp;lt;- rnorm(n = 100, mean = 140, sd = 10)
+b &amp;lt;- rnorm(n = 100, mean = 60, sd = 5 )
+c &amp;lt;- rep(c(&amp;quot;A_city&amp;quot;,&amp;quot;B_city&amp;quot;),50)
+d &amp;lt;- rbinom(n = 100, size = 1, prob = 0.6)  # ここでは男性の割合を0.6として二項分布によるランダム値の作成
+study &amp;lt;- data.frame(a,b,c,d)
+name  &amp;lt;- c(&amp;quot;SBP&amp;quot;, &amp;quot;Age&amp;quot;, &amp;quot;City&amp;quot;, &amp;quot;Sex&amp;quot;) 
+colnames(study) &amp;lt;- name
+# 性別は二値なのでデータ型を変換する
+study$Sex &amp;lt;- as.factor(study$Sex)
+study$Sex &amp;lt;- factor(study$Sex,levels = c(1,0),
+                  labels = c(&amp;quot;Male&amp;quot;,&amp;quot;Female&amp;quot;))&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;div id=&#34;データの確認&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;データの確認&lt;/h3&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;summary(study)
+##       SBP             Age            City        Sex    
+##  Min.   :103.9   Min.   :46.80   A_city:50   Male  :63  
+##  1st Qu.:134.6   1st Qu.:56.90   B_city:50   Female:37  
+##  Median :141.7   Median :59.93                          
+##  Mean   :141.0   Mean   :60.09                          
+##  3rd Qu.:147.9   3rd Qu.:63.14                          
+##  Max.   :164.0   Max.   :72.41&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;div id=&#34;散布図&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;散布図&lt;/h3&gt;
+&lt;p&gt;ggplotでは要素を追記していく形が基本となる。&lt;/p&gt;
+&lt;p&gt;散布図で連続変数同士の関係をみる。&lt;/p&gt;
+&lt;p&gt;例えば年齢と収縮期血圧の関係を見たい場合&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;library(ggplot2)
+ggplot(data = study, aes(x = Age, y = SBP, colour = City)) +   
+# ここがベースで、使用するデータ、軸、およびcolourを指定することでカテゴリーごとに色分けできる
+  geom_point(size = 4) +   # 散布図にするという指定
+  xlab(&amp;quot;Age&amp;quot;) +    # x軸ラベルの命名
+  ylab(&amp;quot;SBP&amp;quot;) +    # y軸ラベルの命名
+  ggtitle(&amp;quot;SBP調査&amp;quot;) +  # グラフタイトルの命名
+  theme_bw()  &lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;../../post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-3-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;A市もB市も同じくらいばらついていそうである。&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;箱ひげ図&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;箱ひげ図&lt;/h3&gt;
+&lt;p&gt;離散型の変数と連続型の変数の関係をみるために使う。&lt;/p&gt;
+&lt;p&gt;箱ひげ図により統計量(平均値、標準偏差)も一緒に図示できる。&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;ggplot(data = study, aes(x = City, y = SBP, colour = City)) +
+  geom_boxplot() +   # ここがboxplotに変わっただけ
+  geom_jitter() +    # 各点のばらつきを追加する
+#  geom_point(size = 3, alpha = 0.5) +
+  xlab(&amp;quot;Age&amp;quot;) + 
+  ylab(&amp;quot;SBP&amp;quot;) + 
+  ggtitle(&amp;quot;SBP調査&amp;quot;) + 
+  theme_bw()&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;../../post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-4-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;バイオリンプロット&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;バイオリンプロット&lt;/h3&gt;
+&lt;p&gt;バイオリンプロットによりデータの分布の密度も可視化することができる。&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;# バイオリンプロットも描くことができる
+ggplot(data = study, aes(x = City, y = SBP, colour = City)) +
+  geom_violin() +
+  xlab(&amp;quot;Age&amp;quot;) + 
+  ylab(&amp;quot;SBP&amp;quot;) + 
+  ggtitle(&amp;quot;SBP調査&amp;quot;) + 
+  theme_bw()&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;../../post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-5-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;ヒストグラム&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;ヒストグラム&lt;/h3&gt;
+&lt;p&gt;連続変数などの分布をみる。&lt;/p&gt;
+&lt;p&gt;ここでは両方の都市での年齢の分布を示している。&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;# ヒストグラム
+ggplot(data = study, aes(x = Age)) +
+  geom_histogram(binwidth = 2) + # ヒストグラム描きます、階級値は2にしますという宣言
+  facet_wrap(~City)  # 群別の図を書くことができる&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;../../post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-6-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;棒グラフ&#34; class=&#34;section level3&#34;&gt;
+&lt;h3&gt;棒グラフ&lt;/h3&gt;
+&lt;p&gt;今回のデータでは必要性が乏しいが&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;ggplot(data = study, aes(x = City, y = SBP, fill = Sex)) +
+  geom_bar(stat = &amp;quot;identity&amp;quot;, position = &amp;quot;dodge&amp;quot;) +
+  xlab(&amp;quot;Sex&amp;quot;) +
+  ylab(&amp;quot;SBP&amp;quot;)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;../../post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-7-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
 &lt;/div&gt;
 </description>
     </item>
