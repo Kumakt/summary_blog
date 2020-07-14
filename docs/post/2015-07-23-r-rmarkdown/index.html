@@ -30,7 +30,7 @@
   <meta name="description" content="一般事項 Rにはグラフを書く上でおもに２つの方法がある。 デフォ">
 
   
-  <link rel="alternate" hreflang="en-us" href="/post/2015-07-23-r-rmarkdown/">
+  <link rel="alternate" hreflang="en-us" href="../../post/2015-07-23-r-rmarkdown/">
 
   
 
@@ -202,7 +202,7 @@
   
   
   
-  <link rel="stylesheet" href="/css/academic.css">
+  <link rel="stylesheet" href="../../css/academic.css">
 
   
 
@@ -217,11 +217,11 @@
 
   
 
-  <link rel="manifest" href="/index.webmanifest">
-  <link rel="icon" type="image/png" href="/images/icon_hu0b7a4cb9992c9ac0e91bd28ffd38dd00_9727_32x32_fill_lanczos_center_2.png">
-  <link rel="apple-touch-icon" type="image/png" href="/images/icon_hu0b7a4cb9992c9ac0e91bd28ffd38dd00_9727_192x192_fill_lanczos_center_2.png">
+  <link rel="manifest" href="../../index.webmanifest">
+  <link rel="icon" type="image/png" href="../../images/icon_hu0b7a4cb9992c9ac0e91bd28ffd38dd00_9727_32x32_fill_lanczos_center_2.png">
+  <link rel="apple-touch-icon" type="image/png" href="../../images/icon_hu0b7a4cb9992c9ac0e91bd28ffd38dd00_9727_192x192_fill_lanczos_center_2.png">
 
-  <link rel="canonical" href="/post/2015-07-23-r-rmarkdown/">
+  <link rel="canonical" href="../../post/2015-07-23-r-rmarkdown/">
 
   
   
@@ -359,7 +359,7 @@
 
     
     <div class="d-none d-lg-inline-flex">
-      <a class="navbar-brand" href="/">Kumakt Memorandum</a>
+      <a class="navbar-brand" href="../../">Kumakt Memorandum</a>
     </div>
     
 
@@ -372,7 +372,7 @@
 
     
     <div class="navbar-brand-mobile-wrapper d-inline-flex d-lg-none">
-      <a class="navbar-brand" href="/">Kumakt Memorandum</a>
+      <a class="navbar-brand" href="../../">Kumakt Memorandum</a>
     </div>
     
 
@@ -407,7 +407,7 @@
         
 
         <li class="nav-item">
-          <a class="nav-link " href="/#home"><span>Home</span></a>
+          <a class="nav-link " href="../../#home"><span>Home</span></a>
         </li>
 
         
@@ -436,7 +436,7 @@
         
 
         <li class="nav-item">
-          <a class="nav-link " href="/#posts"><span>Posts</span></a>
+          <a class="nav-link " href="../../#posts"><span>Posts</span></a>
         </li>
 
         
@@ -543,7 +543,7 @@
   
   <span class="middot-divider"></span>
   <span class="article-categories">
-    <i class="fas fa-folder mr-1"></i><a href="/category/r/">R</a></span>
+    <i class="fas fa-folder mr-1"></i><a href="../../category/r/">R</a></span>
   
 
 </div>
@@ -620,7 +620,7 @@ ggplot(data = study, aes(x = Age, y = SBP, colour = City)) +
   ylab(&quot;SBP&quot;) +    # y軸ラベルの命名
   ggtitle(&quot;SBP調査&quot;) +  # グラフタイトルの命名
   theme_bw()  </code></pre>
-<p><img src="/post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
+<p><img src="../../post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
 <p>A市もB市も同じくらいばらついていそうである。</p>
 </div>
 <div id="箱ひげ図" class="section level3">
@@ -635,7 +635,7 @@ ggplot(data = study, aes(x = Age, y = SBP, colour = City)) +
   ylab(&quot;SBP&quot;) + 
   ggtitle(&quot;SBP調査&quot;) + 
   theme_bw()</code></pre>
-<p><img src="/post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
+<p><img src="../../post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
 </div>
 <div id="バイオリンプロット" class="section level3">
 <h3>バイオリンプロット</h3>
@@ -647,7 +647,7 @@ ggplot(data = study, aes(x = City, y = SBP, colour = City)) +
   ylab(&quot;SBP&quot;) + 
   ggtitle(&quot;SBP調査&quot;) + 
   theme_bw()</code></pre>
-<p><img src="/post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
+<p><img src="../../post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
 </div>
 <div id="ヒストグラム" class="section level3">
 <h3>ヒストグラム</h3>
@@ -657,7 +657,7 @@ ggplot(data = study, aes(x = City, y = SBP, colour = City)) +
 ggplot(data = study, aes(x = Age)) +
   geom_histogram(binwidth = 2) + # ヒストグラム描きます、階級値は2にしますという宣言
   facet_wrap(~City)  # 群別の図を書くことができる</code></pre>
-<p><img src="/post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+<p><img src="../../post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
 </div>
 <div id="棒グラフ" class="section level3">
 <h3>棒グラフ</h3>
@@ -666,7 +666,7 @@ ggplot(data = study, aes(x = Age)) +
   geom_bar(stat = &quot;identity&quot;, position = &quot;dodge&quot;) +
   xlab(&quot;Sex&quot;) +
   ylab(&quot;SBP&quot;)</code></pre>
-<p><img src="/post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
+<p><img src="../../post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
 </div>
 
     </div>
@@ -680,11 +680,11 @@ ggplot(data = study, aes(x = Age)) +
 
 <div class="article-tags">
   
-  <a class="badge badge-light" href="/tag/r-markdown/">R Markdown</a>
+  <a class="badge badge-light" href="../../tag/r-markdown/">R Markdown</a>
   
-  <a class="badge badge-light" href="/tag/ggplot/">ggplot</a>
+  <a class="badge badge-light" href="../../tag/ggplot/">ggplot</a>
   
-  <a class="badge badge-light" href="/tag/regression/">regression</a>
+  <a class="badge badge-light" href="../../tag/regression/">regression</a>
   
 </div>
 
@@ -701,7 +701,7 @@ ggplot(data = study, aes(x = Age)) +
       
       
       <li>
-        <a href="https://twitter.com/intent/tweet?url=/post/2015-07-23-r-rmarkdown/&amp;text=R%e3%81%ab%e3%82%88%e3%82%8b%e3%82%b0%e3%83%a9%e3%83%95%e5%9f%ba%e7%a4%8e" target="_blank" rel="noopener" class="share-btn-twitter">
+        <a href="https://twitter.com/intent/tweet?url=../../post/2015-07-23-r-rmarkdown/&amp;text=R%e3%81%ab%e3%82%88%e3%82%8b%e3%82%b0%e3%83%a9%e3%83%95%e5%9f%ba%e7%a4%8e" target="_blank" rel="noopener" class="share-btn-twitter">
           <i class="fab fa-twitter"></i>
         </a>
       </li>
@@ -740,7 +740,7 @@ ggplot(data = study, aes(x = Age)) +
       
       
       <li>
-        <a href="https://www.linkedin.com/shareArticle?url=/post/2015-07-23-r-rmarkdown/&amp;title=R%e3%81%ab%e3%82%88%e3%82%8b%e3%82%b0%e3%83%a9%e3%83%95%e5%9f%ba%e7%a4%8e" target="_blank" rel="noopener" class="share-btn-linkedin">
+        <a href="https://www.linkedin.com/shareArticle?url=../../post/2015-07-23-r-rmarkdown/&amp;title=R%e3%81%ab%e3%82%88%e3%82%8b%e3%82%b0%e3%83%a9%e3%83%95%e5%9f%ba%e7%a4%8e" target="_blank" rel="noopener" class="share-btn-linkedin">
           <i class="fab fa-linkedin-in"></i>
         </a>
       </li>
@@ -766,7 +766,7 @@ ggplot(data = study, aes(x = Age)) +
       
       
       <li>
-        <a href="https://service.weibo.com/share/share.php?url=/post/2015-07-23-r-rmarkdown/&amp;title=R%e3%81%ab%e3%82%88%e3%82%8b%e3%82%b0%e3%83%a9%e3%83%95%e5%9f%ba%e7%a4%8e" target="_blank" rel="noopener" class="share-btn-weibo">
+        <a href="https://service.weibo.com/share/share.php?url=../../post/2015-07-23-r-rmarkdown/&amp;title=R%e3%81%ab%e3%82%88%e3%82%8b%e3%82%b0%e3%83%a9%e3%83%95%e5%9f%ba%e7%a4%8e" target="_blank" rel="noopener" class="share-btn-weibo">
           <i class="fab fa-weibo"></i>
         </a>
       </li>
@@ -803,11 +803,11 @@ ggplot(data = study, aes(x = Age)) +
     <div class="media author-card content-widget-hr">
       
         
-        <img class="avatar mr-3 avatar-circle" src="/author/kumakt/avatar_hu52a603635ecebd45650b162dadabb4e5_12861_270x270_fill_q90_lanczos_center.jpg" alt="Kumakt">
+        <img class="avatar mr-3 avatar-circle" src="../../author/kumakt/avatar_hu52a603635ecebd45650b162dadabb4e5_12861_270x270_fill_q90_lanczos_center.jpg" alt="Kumakt">
       
 
       <div class="media-body">
-        <h5 class="card-title"><a href="/">Kumakt</a></h5>
+        <h5 class="card-title"><a href="../../">Kumakt</a></h5>
         <h6 class="card-subtitle">Post graduate student</h6>
         <p class="card-text">My research interests include epidemiology, data analysis.</p>
         <ul class="network-icon" aria-hidden="true">
@@ -824,7 +824,7 @@ ggplot(data = study, aes(x = Age)) +
       
     
     <li>
-      <a href="/#contact" >
+      <a href="../../#contact" >
         <i class="fas fa-envelope"></i>
       </a>
     </li>
@@ -841,7 +841,7 @@ ggplot(data = study, aes(x = Age)) +
       
     
     <li>
-      <a href="/" >
+      <a href="../../" >
         <i class="fab fa-github"></i>
       </a>
     </li>
@@ -871,7 +871,7 @@ ggplot(data = study, aes(x = Age)) +
     <h3>Related</h3>
     <ul>
       
-      <li><a href="/post/linear/">線形回帰モデルの基礎</a></li>
+      <li><a href="../../post/linear/">線形回帰モデルの基礎</a></li>
       
     </ul>
   </div>
@@ -987,7 +987,7 @@ ggplot(data = study, aes(x = Age)) +
     
     
     
-    <script src="/js/academic.min.66c553246b0f279a03be6e5597f72b52.js"></script>
+    <script src="../../js/academic.min.66c553246b0f279a03be6e5597f72b52.js"></script>
 
     
 
@@ -1003,11 +1003,11 @@ ggplot(data = study, aes(x = Age)) +
   
   <p class="powered-by">
     
-      <a href="/privacy/">Privacy Policy</a>
+      <a href="../../privacy/">Privacy Policy</a>
     
     
        &middot; 
-      <a href="/terms/">Terms</a>
+      <a href="../../terms/">Terms</a>
     
   </p>
   

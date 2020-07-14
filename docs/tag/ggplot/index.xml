@@ -66,7 +66,7 @@ ggplot(data = study, aes(x = Age, y = SBP, colour = City)) +
   ylab(&amp;quot;SBP&amp;quot;) +    # y軸ラベルの命名
   ggtitle(&amp;quot;SBP調査&amp;quot;) +  # グラフタイトルの命名
   theme_bw()  &lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img src=&#34;/post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-3-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;../../post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-3-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
 &lt;p&gt;A市もB市も同じくらいばらついていそうである。&lt;/p&gt;
 &lt;/div&gt;
 &lt;div id=&#34;箱ひげ図&#34; class=&#34;section level3&#34;&gt;
@@ -81,7 +81,7 @@ ggplot(data = study, aes(x = Age, y = SBP, colour = City)) +
   ylab(&amp;quot;SBP&amp;quot;) + 
   ggtitle(&amp;quot;SBP調査&amp;quot;) + 
   theme_bw()&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img src=&#34;/post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-4-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;../../post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-4-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
 &lt;/div&gt;
 &lt;div id=&#34;バイオリンプロット&#34; class=&#34;section level3&#34;&gt;
 &lt;h3&gt;バイオリンプロット&lt;/h3&gt;
@@ -93,7 +93,7 @@ ggplot(data = study, aes(x = City, y = SBP, colour = City)) +
   ylab(&amp;quot;SBP&amp;quot;) + 
   ggtitle(&amp;quot;SBP調査&amp;quot;) + 
   theme_bw()&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img src=&#34;/post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-5-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;../../post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-5-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
 &lt;/div&gt;
 &lt;div id=&#34;ヒストグラム&#34; class=&#34;section level3&#34;&gt;
 &lt;h3&gt;ヒストグラム&lt;/h3&gt;
@@ -103,7 +103,7 @@ ggplot(data = study, aes(x = City, y = SBP, colour = City)) +
 ggplot(data = study, aes(x = Age)) +
   geom_histogram(binwidth = 2) + # ヒストグラム描きます、階級値は2にしますという宣言
   facet_wrap(~City)  # 群別の図を書くことができる&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img src=&#34;/post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-6-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;../../post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-6-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
 &lt;/div&gt;
 &lt;div id=&#34;棒グラフ&#34; class=&#34;section level3&#34;&gt;
 &lt;h3&gt;棒グラフ&lt;/h3&gt;
@@ -112,7 +112,7 @@ ggplot(data = study, aes(x = Age)) +
   geom_bar(stat = &amp;quot;identity&amp;quot;, position = &amp;quot;dodge&amp;quot;) +
   xlab(&amp;quot;Sex&amp;quot;) +
   ylab(&amp;quot;SBP&amp;quot;)&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img src=&#34;/post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-7-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;../../post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-7-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
 &lt;/div&gt;
 </description>
     </item>

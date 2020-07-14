@@ -66,7 +66,7 @@ ggplot(data = study, aes(x = Age, y = SBP, colour = City)) +
   ylab(&amp;quot;SBP&amp;quot;) +    # y軸ラベルの命名
   ggtitle(&amp;quot;SBP調査&amp;quot;) +  # グラフタイトルの命名
   theme_bw()  &lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img src=&#34;/post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-3-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;../../post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-3-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
 &lt;p&gt;A市もB市も同じくらいばらついていそうである。&lt;/p&gt;
 &lt;/div&gt;
 &lt;div id=&#34;箱ひげ図&#34; class=&#34;section level3&#34;&gt;
@@ -81,7 +81,7 @@ ggplot(data = study, aes(x = Age, y = SBP, colour = City)) +
   ylab(&amp;quot;SBP&amp;quot;) + 
   ggtitle(&amp;quot;SBP調査&amp;quot;) + 
   theme_bw()&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img src=&#34;/post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-4-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;../../post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-4-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
 &lt;/div&gt;
 &lt;div id=&#34;バイオリンプロット&#34; class=&#34;section level3&#34;&gt;
 &lt;h3&gt;バイオリンプロット&lt;/h3&gt;
@@ -93,7 +93,7 @@ ggplot(data = study, aes(x = City, y = SBP, colour = City)) +
   ylab(&amp;quot;SBP&amp;quot;) + 
   ggtitle(&amp;quot;SBP調査&amp;quot;) + 
   theme_bw()&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img src=&#34;/post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-5-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;../../post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-5-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
 &lt;/div&gt;
 &lt;div id=&#34;ヒストグラム&#34; class=&#34;section level3&#34;&gt;
 &lt;h3&gt;ヒストグラム&lt;/h3&gt;
@@ -103,7 +103,7 @@ ggplot(data = study, aes(x = City, y = SBP, colour = City)) +
 ggplot(data = study, aes(x = Age)) +
   geom_histogram(binwidth = 2) + # ヒストグラム描きます、階級値は2にしますという宣言
   facet_wrap(~City)  # 群別の図を書くことができる&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img src=&#34;/post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-6-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;../../post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-6-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
 &lt;/div&gt;
 &lt;div id=&#34;棒グラフ&#34; class=&#34;section level3&#34;&gt;
 &lt;h3&gt;棒グラフ&lt;/h3&gt;
@@ -112,7 +112,7 @@ ggplot(data = study, aes(x = Age)) +
   geom_bar(stat = &amp;quot;identity&amp;quot;, position = &amp;quot;dodge&amp;quot;) +
   xlab(&amp;quot;Sex&amp;quot;) +
   ylab(&amp;quot;SBP&amp;quot;)&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img src=&#34;/post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-7-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;../../post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-7-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
 &lt;/div&gt;
 </description>
     </item>
@@ -133,8 +133,8 @@ ggplot(data = study, aes(x = Age)) +
 &lt;p&gt;&lt;span class=&#34;math display&#34;&gt;\[y = \beta_0 + \beta_1x\]&lt;/span&gt;&lt;/p&gt;
 &lt;p&gt;である。&lt;/p&gt;
 &lt;p&gt;実際のデータでこのモデルを考える際には、観測値と仮定したモデルとの間には誤差が生じるため&lt;/p&gt;
-&lt;p&gt;&lt;span class=&#34;math inline&#34;&gt;\(y_i = \beta_0 + \beta_1x_i + \epsilon_i\)&lt;/span&gt;&lt;/p&gt;
-&lt;p&gt;となる。&lt;span class=&#34;math inline&#34;&gt;\(i = 1,2,3...n\)&lt;/span&gt;である。&lt;/p&gt;
+&lt;p&gt;&lt;span class=&#34;math inline&#34;&gt;\(y_i = \beta_0 + \beta_1x_i + \epsilon_i\)&lt;/span&gt;となる。&lt;/p&gt;
+&lt;p&gt;&lt;span class=&#34;math inline&#34;&gt;\(i = 1,2,3...n\)&lt;/span&gt;である。&lt;/p&gt;
 &lt;p&gt;このモデルがデータに良くあてはまるためには誤差&lt;span class=&#34;math inline&#34;&gt;\(\epsilon_i\)&lt;/span&gt;の総和が小さくなるようなパラメータを求めればよい。&lt;/p&gt;
 &lt;p&gt;ただし、線形回帰モデルと観測値の差は負の値になることもあるため、そのまま総和をとるわけでなく、2乗して&lt;/p&gt;
 &lt;p&gt;総和をとる。これが&lt;strong&gt;最小二乗法&lt;/strong&gt;である。&lt;/p&gt;
@@ -194,7 +194,7 @@ ggplot(data = data,
        aes(x = age, y = SBP)) +
   geom_point() +
   theme_bw()&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img src=&#34;/post/linear_files/figure-html/unnamed-chunk-3-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;../../post/linear_files/figure-html/unnamed-chunk-3-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
 &lt;p&gt;散布図をみる限り、年齢と収縮期血圧には線形の関係がありそうに見える。&lt;/p&gt;
 &lt;/div&gt;
 &lt;div id=&#34;モデルを作成する&#34; class=&#34;section level3&#34;&gt;
@@ -230,7 +230,17 @@ summary(model)&lt;/code&gt;&lt;/pre&gt;
 &lt;h3&gt;モデルの評価&lt;/h3&gt;
 &lt;pre class=&#34;r&#34;&gt;&lt;code&gt;library(ggfortify)
 autoplot(model, smooth.colour = NA)&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img src=&#34;/post/linear_files/figure-html/unnamed-chunk-5-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;## Warning: `arrange_()` is deprecated as of dplyr 0.7.0.
+## Please use `arrange()` instead.
+## See vignette(&amp;#39;programming&amp;#39;) for more help
+## This warning is displayed once every 8 hours.
+## Call `lifecycle::last_warnings()` to see where this warning was generated.&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## Warning: Removed 50 row(s) containing missing values (geom_path).
+
+## Warning: Removed 50 row(s) containing missing values (geom_path).
+
+## Warning: Removed 50 row(s) containing missing values (geom_path).&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;../../post/linear_files/figure-html/unnamed-chunk-5-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
 &lt;p&gt;右上のQQplotはおおむね問題なさそうであり、残差は正規分布していそうである。&lt;/p&gt;
 &lt;p&gt;また左下の図をみても分散に明らかな偏りはなさそうであり、等分散性が保たれていると思われる。
 (ばらつきは比較的ありそうである)&lt;/p&gt;
@@ -248,7 +258,7 @@ autoplot(model, smooth.colour = NA)&lt;/code&gt;&lt;/pre&gt;
   stat_smooth(method = &amp;quot;lm&amp;quot;, se = TRUE, size = 1) +
   theme_bw()&lt;/code&gt;&lt;/pre&gt;
 &lt;pre&gt;&lt;code&gt;## `geom_smooth()` using formula &amp;#39;y ~ x&amp;#39;&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img src=&#34;/post/linear_files/figure-html/unnamed-chunk-6-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;../../post/linear_files/figure-html/unnamed-chunk-6-1.png&#34; width=&#34;672&#34; /&gt;&lt;/p&gt;
 &lt;/div&gt;
 &lt;div id=&#34;結果&#34; class=&#34;section level3&#34;&gt;
 &lt;h3&gt;結果&lt;/h3&gt;
