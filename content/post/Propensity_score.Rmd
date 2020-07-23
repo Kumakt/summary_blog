@@ -58,7 +58,7 @@ https://jamanetwork.com/journals/jama/fullarticle/2706139
 
 ### パッケージの読み込み
 
-```{r warning=FALSE}
+```{r message=FALSE}
 library(dplyr)
 # パイプを使うため
 library(magrittr)

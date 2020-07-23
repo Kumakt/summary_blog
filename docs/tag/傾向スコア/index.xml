@@ -40,16 +40,8 @@ ventilation)、菌血症の有無(Bacteremia)&lt;/p&gt;&lt;/li&gt;
 &lt;/div&gt;
 &lt;div id=&#34;パッケージの読み込み&#34; class=&#34;section level3&#34;&gt;
 &lt;h3&gt;パッケージの読み込み&lt;/h3&gt;
-&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;library(dplyr)&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;## 
-##  次のパッケージを付け加えます: &amp;#39;dplyr&amp;#39;&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;##  以下のオブジェクトは &amp;#39;package:stats&amp;#39; からマスクされています: 
-## 
-##      filter, lag&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;##  以下のオブジェクトは &amp;#39;package:base&amp;#39; からマスクされています: 
-## 
-##      intersect, setdiff, setequal, union&lt;/code&gt;&lt;/pre&gt;
-&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;# パイプを使うため
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;library(dplyr)
+# パイプを使うため
 library(magrittr)
 # シミュレーションデータを作るため
 library(simstudy)&lt;/code&gt;&lt;/pre&gt;
