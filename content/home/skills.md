@@ -18,8 +18,8 @@ subtitle = ""
   icon = "terminal"
   icon_pack = "fas"
   name = "Programming"
-  description = "R, Python"
-  skills = ["R", "Python"]  
+  description = "R, Python, Stata"
+  skills = ["R", "Python", "Stata"]  
 
 [[feature]]
   icon = "database"

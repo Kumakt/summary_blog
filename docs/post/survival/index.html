@@ -1,0 +1,1171 @@
+<!DOCTYPE html><html lang="en-us" >
+
+<head>
+
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="generator" content="Source Themes Academic 4.8.0">
+
+  
+
+  
+  
+  
+  
+  
+    
+    
+    
+  
+  
+
+  <meta name="author" content="Kumakt">
+
+  
+  
+  
+    
+  
+  <meta name="description" content="Rによる生存時間解析の実装について簡単に">
+
+  
+  <link rel="alternate" hreflang="en-us" href="../../post/survival/">
+
+  
+
+
+  
+  
+  
+  <meta name="theme-color" content="#3f51b5">
+  
+
+  
+  
+  
+  <script src="../../js/mathjax-config.js"></script>
+  
+
+  
+  
+  
+  
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/academicons/1.8.6/css/academicons.min.css" integrity="sha256-uFVgMKfistnJAfoCUQigIl+JfUaP47GrRKjf6CTPVmw=" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.0-1/css/all.min.css" integrity="sha256-4w9DunooKSr3MFXHXWyFER38WmPdm361bQS/2KUWZbU=" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.5.7/jquery.fancybox.min.css" integrity="sha256-Vzbj7sDDS/woiFS3uNKo8eIuni59rjyNGtXfstRzStA=" crossorigin="anonymous">
+
+    
+    
+    
+      
+    
+    
+      
+      
+        
+          <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/styles/github.min.css" crossorigin="anonymous" title="hl-light">
+          <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/styles/dracula.min.css" crossorigin="anonymous" title="hl-dark" disabled>
+        
+      
+    
+
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.5.1/leaflet.css" integrity="sha256-SHMGCYmST46SoyGgo4YR/9AlK1vf3ff84Aq9yK4hdqM=" crossorigin="anonymous">
+    
+
+    
+
+    
+    
+      
+
+      
+      
+
+      
+    
+      
+
+      
+      
+
+      
+    
+      
+
+      
+      
+
+      
+    
+      
+
+      
+      
+
+      
+    
+      
+
+      
+      
+
+      
+    
+      
+
+      
+      
+
+      
+    
+      
+
+      
+      
+
+      
+    
+      
+
+      
+      
+
+      
+    
+      
+
+      
+      
+
+      
+    
+      
+
+      
+      
+
+      
+    
+      
+
+      
+      
+
+      
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/lazysizes/5.1.2/lazysizes.min.js" integrity="sha256-Md1qLToewPeKjfAHU1zyPwOutccPAm5tahnaw7Osw0A=" crossorigin="anonymous" async></script>
+      
+    
+      
+
+      
+      
+
+      
+    
+      
+
+      
+      
+
+      
+    
+      
+
+      
+      
+
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" integrity="" crossorigin="anonymous" async></script>
+      
+    
+      
+
+      
+      
+
+      
+    
+
+  
+
+  
+  
+  
+    
+      
+      
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Montserrat:400,700%7CRoboto:400,400italic,700%7CRoboto+Mono&display=swap">
+    
+  
+
+  
+  
+  
+  
+  <link rel="stylesheet" href="../../css/academic.css">
+
+  
+
+
+
+
+  
+
+
+  
+  
+
+  
+
+  <link rel="manifest" href="../../index.webmanifest">
+  <link rel="icon" type="image/png" href="../../images/icon_hu0b7a4cb9992c9ac0e91bd28ffd38dd00_9727_32x32_fill_lanczos_center_2.png">
+  <link rel="apple-touch-icon" type="image/png" href="../../images/icon_hu0b7a4cb9992c9ac0e91bd28ffd38dd00_9727_192x192_fill_lanczos_center_2.png">
+
+  <link rel="canonical" href="../../post/survival/">
+
+  
+  
+  
+  
+  
+  
+  
+    
+    
+  
+  
+  <meta property="twitter:card" content="summary">
+  
+  <meta property="og:site_name" content="Kumakt Memorandum">
+  <meta property="og:url" content="/post/survival/">
+  <meta property="og:title" content="Rによる生存時間解析の実装 | Kumakt Memorandum">
+  <meta property="og:description" content="Rによる生存時間解析の実装について簡単に"><meta property="og:image" content="/images/icon_hu0b7a4cb9992c9ac0e91bd28ffd38dd00_9727_512x512_fill_lanczos_center_2.png">
+  <meta property="twitter:image" content="/images/icon_hu0b7a4cb9992c9ac0e91bd28ffd38dd00_9727_512x512_fill_lanczos_center_2.png"><meta property="og:locale" content="en-us">
+  
+    
+      <meta property="article:published_time" content="2020-07-15T22:16:38&#43;09:00">
+    
+    <meta property="article:modified_time" content="2020-07-15T22:16:38&#43;09:00">
+  
+
+  
+
+
+    
+
+
+
+
+
+
+  
+
+
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "/post/survival/"
+  },
+  "headline": "Rによる生存時間解析の実装",
+  
+  "datePublished": "2020-07-15T22:16:38+09:00",
+  "dateModified": "2020-07-15T22:16:38+09:00",
+  
+  "author": {
+    "@type": "Person",
+    "name": "Kumakt"
+  },
+  
+  "publisher": {
+    "@type": "Organization",
+    "name": "Kumakt Memorandum",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "/images/icon_hu0b7a4cb9992c9ac0e91bd28ffd38dd00_9727_192x192_fill_lanczos_center_2.png"
+    }
+  },
+  "description": "Rによる生存時間解析の実装について簡単に"
+}
+</script>
+
+  
+
+  
+
+
+  
+
+
+  
+
+
+
+
+
+  <title>Rによる生存時間解析の実装 | Kumakt Memorandum</title>
+
+</head>
+<body id="top" data-spy="scroll" data-offset="70" data-target="#TableOfContents" >
+
+  <aside class="search-results" id="search">
+  <div class="container">
+    <section class="search-header">
+
+      <div class="row no-gutters justify-content-between mb-3">
+        <div class="col-6">
+          <h1>Search</h1>
+        </div>
+        <div class="col-6 col-search-close">
+          <a class="js-search" href="#"><i class="fas fa-times-circle text-muted" aria-hidden="true"></i></a>
+        </div>
+      </div>
+
+      <div id="search-box">
+        
+        <input name="q" id="search-query" placeholder="Search..." autocapitalize="off"
+        autocomplete="off" autocorrect="off" spellcheck="false" type="search" class="form-control">
+        
+      </div>
+
+    </section>
+    <section class="section-search-results">
+
+      <div id="search-hits">
+        
+      </div>
+
+    </section>
+  </div>
+</aside>
+
+
+  
+
+
+
+
+
+
+
+
+
+<nav class="navbar navbar-expand-lg navbar-light compensate-for-scrollbar" id="navbar-main">
+  <div class="container">
+
+    
+    <div class="d-none d-lg-inline-flex">
+      <a class="navbar-brand" href="../../">Kumakt Memorandum</a>
+    </div>
+    
+
+    
+    <button type="button" class="navbar-toggler" data-toggle="collapse"
+            data-target="#navbar-content" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
+    <span><i class="fas fa-bars"></i></span>
+    </button>
+    
+
+    
+    <div class="navbar-brand-mobile-wrapper d-inline-flex d-lg-none">
+      <a class="navbar-brand" href="../../">Kumakt Memorandum</a>
+    </div>
+    
+
+    
+    
+    <div class="navbar-collapse main-menu-item collapse justify-content-start" id="navbar-content">
+
+      
+      <ul class="navbar-nav d-md-inline-flex">
+        
+
+        
+
+        
+        
+        
+          
+        
+
+        
+        
+        
+        
+        
+        
+          
+          
+          
+            
+          
+          
+        
+
+        <li class="nav-item">
+          <a class="nav-link " href="../../#home"><span>Home</span></a>
+        </li>
+
+        
+        
+
+        
+
+        
+        
+        
+          
+        
+
+        
+        
+        
+        
+        
+        
+          
+          
+          
+            
+          
+          
+        
+
+        <li class="nav-item">
+          <a class="nav-link " href="../../#posts"><span>Posts</span></a>
+        </li>
+
+        
+        
+
+      
+
+        
+      </ul>
+    </div>
+
+    <ul class="nav-icons navbar-nav flex-row ml-auto d-flex pl-md-2">
+      
+      <li class="nav-item">
+        <a class="nav-link js-search" href="#" aria-label="Search"><i class="fas fa-search" aria-hidden="true"></i></a>
+      </li>
+      
+
+      
+      <li class="nav-item dropdown theme-dropdown">
+        <a href="#" class="nav-link js-theme-selector" data-toggle="dropdown" aria-haspopup="true">
+          <i class="fas fa-palette" aria-hidden="true"></i>
+        </a>
+        <div class="dropdown-menu">
+          <a href="#" class="dropdown-item js-set-theme-light">
+            <span>Light</span>
+          </a>
+          <a href="#" class="dropdown-item js-set-theme-dark">
+            <span>Dark</span>
+          </a>
+          <a href="#" class="dropdown-item js-set-theme-auto">
+            <span>Automatic</span>
+          </a>
+        </div>
+      </li>
+      
+
+      
+
+    </ul>
+
+  </div>
+</nav>
+
+
+  <article class="article">
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  
+  
+<div class="article-container pt-3">
+  <h1>Rによる生存時間解析の実装</h1>
+
+  
+
+  
+    
+
+
+<div class="article-metadata">
+
+  
+  
+  
+  
+  <div>
+    
+
+  
+  <span ><a href="../../author/kumakt/">Kumakt</a></span>
+  </div>
+  
+  
+
+  
+  <span class="article-date">
+    
+    
+      
+    
+    Jul 15, 2020
+  </span>
+  
+
+  
+
+  
+  <span class="middot-divider"></span>
+  <span class="article-reading-time">
+    5 min read
+  </span>
+  
+
+  
+  
+  
+
+  
+  
+  <span class="middot-divider"></span>
+  <span class="article-categories">
+    <i class="fas fa-folder mr-1"></i><a href="../../category/r/">R</a></span>
+  
+
+</div>
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+</div>
+
+
+
+  <div class="article-container">
+
+    <div class="article-style">
+      
+
+
+<div id="パッケージの読み込み" class="section level4">
+<h4>パッケージの読み込み</h4>
+<ul>
+<li>まずパッケージを読み込む</li>
+</ul>
+<pre class="r"><code># パッケージの読み込み
+library(survival)
+library(magrittr)</code></pre>
+</div>
+<div id="データの確認" class="section level4">
+<h4>データの確認</h4>
+<ul>
+<li><p>summary関数とstr関数を用いる。</p></li>
+<li><p>必要に応じてグラフなどを書いてデータの分布を調べる。</p></li>
+</ul>
+<pre class="r"><code>head(myeloid, n = 5)</code></pre>
+<pre><code>##   id trt sex futime death txtime crtime rltime
+## 1  1   B   f    235     1     NA     44    113
+## 2  2   A   m    286     1    200     NA     NA
+## 3  3   A   f   1983     0     NA     38     NA
+## 4  4   B   f   2137     0    245     25     NA
+## 5  5   B   f    326     1    112     56    200</code></pre>
+<p>先頭5行の表示</p>
+<pre class="r"><code>summary(myeloid)</code></pre>
+<pre><code>##        id            trt            sex         futime           death       
+##  Min.   :  1.0   Length:646         f:361   Min.   :   4.0   Min.   :0.0000  
+##  1st Qu.:162.2   Class :character   m:285   1st Qu.: 286.5   1st Qu.:0.0000  
+##  Median :323.5   Mode  :character           Median : 817.0   Median :0.0000  
+##  Mean   :323.5                              Mean   :1010.1   Mean   :0.4954  
+##  3rd Qu.:484.8                              3rd Qu.:1733.2   3rd Qu.:1.0000  
+##  Max.   :646.0                              Max.   :2419.0   Max.   :1.0000  
+##                                                                              
+##      txtime           crtime          rltime      
+##  Min.   :  24.0   Min.   : 21.0   Min.   :  26.0  
+##  1st Qu.: 105.0   1st Qu.: 32.0   1st Qu.: 181.5  
+##  Median : 147.0   Median : 39.0   Median : 283.0  
+##  Mean   : 229.3   Mean   : 50.1   Mean   : 363.3  
+##  3rd Qu.: 244.2   3rd Qu.: 57.0   3rd Qu.: 470.0  
+##  Max.   :1526.0   Max.   :554.0   Max.   :1905.0  
+##  NA&#39;s   :282      NA&#39;s   :192     NA&#39;s   :420</code></pre>
+<pre class="r"><code># データの型確認
+str(myeloid)</code></pre>
+<pre><code>## &#39;data.frame&#39;:    646 obs. of  8 variables:
+##  $ id    : int  1 2 3 4 5 6 7 8 9 10 ...
+##  $ trt   : chr  &quot;B&quot; &quot;A&quot; &quot;A&quot; &quot;B&quot; ...
+##  $ sex   : Factor w/ 2 levels &quot;f&quot;,&quot;m&quot;: 1 2 1 1 1 1 2 1 1 1 ...
+##  $ futime: num  235 286 1983 2137 326 ...
+##  $ death : num  1 1 0 0 1 0 1 1 0 0 ...
+##  $ txtime: num  NA 200 NA 245 112 102 NA 205 NA 106 ...
+##  $ crtime: num  44 NA 38 25 56 NA NA 34 28 NA ...
+##  $ rltime: num  113 NA NA NA 200 NA NA 382 NA NA ...</code></pre>
+<p>ここで使うデータは、パッケージに付属のデータ：白血病患者に対する治療のA/Bでの効果を調べるデータ</p>
+<ul>
+<li>id: subject identifier, 1-646,</li>
+<li>trt: treatment arm A or B,<br />
+</li>
+<li>sex: f=female, m=male,<br />
+</li>
+<li>futime: time to death or last follow-up,<br />
+</li>
+<li>death: 1 if futime is a death, 0 for censoring,<br />
+</li>
+<li>txtime: time to hematropetic stem cell transplant</li>
+<li>crtime: time to complete response, rltime: time to relapse of disease</li>
+</ul>
+<p>今回は治療A/Bと死亡までの差をみる</p>
+<p>欠損値が存在しているが、今回の解析には影響を与えない。</p>
+</div>
+<div id="生存時間解析の準備" class="section level4">
+<h4>生存時間解析の準備</h4>
+<pre class="r"><code>ge.surv &lt;- Surv(myeloid$futime, myeloid$death)
+head(ge.surv, n = 10)</code></pre>
+<pre><code>##  [1]  235   286  1983+ 2137+  326  2041+   63   446  1695+ 1669+</code></pre>
+<p>+はイベント打ち切り、無印はイベントがなかったことを示す</p>
+<pre class="r"><code>#myeloid %&gt;% 
+  Surv(myeloid$futime, myeloid$death)</code></pre>
+<pre><code>##   [1]  235   286  1983+ 2137+  326  2041+   63   446  1695+ 1669+   66+ 1364+
+##  [13]   17+  209   261  2380+  431   372   838  2086+ 1480+  188   963   318 
+##  [25]  373  1657+  213  1421+  337   565   286  1823+   17+  201   321+  529 
+##  [37]  266  1305  1460+ 1832  1859+ 1864+ 1880+  368  1391+  762   332   376+
+##  [49] 1740+ 2241+  582   284   823  2186+ 2198+ 1737+ 2315+ 2006+  185  2367+
+##  [61] 1893+ 1734+ 2042+ 2162+ 1176+ 2148+ 2247+ 1991+  180  1956+ 1976+   13 
+##  [73] 1913+  110   116   245  2194+  531  1782+  548    46  2052+  411  1034 
+##  [85]  293  2250+  235   267  2136+ 1465+  439   295   286  1251+ 1360+ 1783+
+##  [97] 1866+  892  1525+  461   322  1323+  651   241+ 2300+ 2192+  191    18+
+## [109] 1621    50    15+   27   574   917   609  1774+  206   297    77    52 
+## [121] 1429+  278  1393+  232   106   397   140  2038+ 1911+   13  1990+  424 
+## [133] 2063+ 1721+  955+ 1731+ 1499+  281   310  1999+  408  1361+  337    15+
+## [145] 1530+  234  1681+  518   800  1806+ 1192+ 2304+ 1687+ 1785+ 1912+ 2335+
+## [157]   31+  485   432+ 1409  1464+   18   462   408  1423+ 1431+  248  1459+
+## [169] 2148+ 2188+ 1725+  218  1999+ 1254  1420+ 1521+ 1921+ 1648+ 1555+  614 
+## [181]   50    86   588+  874    33   156   563   231  1020  1390+  572  1877+
+## [193] 2122+  322   511   288   368   480  2224+ 1708+  561  1578+  834  1583+
+## [205]    7+  513  1426+ 2040+ 1796+ 1627+  360  1280+ 2371+ 1479+  260  2219+
+## [217]   20   269   381   163  1287+ 1092+  154   771  1972+ 1658+ 2283  1827+
+## [229]    4+ 2210+ 1379   516  1007  1757+ 2134+   99  1369+  121  2361+  423 
+## [241]  322  1423+  369   603    25  1809+  131   602   692  1444+  601+  305 
+## [253]  518  2118+  972   524  1881+   74  2345+  403    14+ 2053+ 2254+   76 
+## [265]   22+ 2154+  779   167    16+  191   707   103   283   293  1442+ 1350+
+## [277] 1710+   19+ 1384+  263  1947+  230   248   216  1717+ 1718+  707   303 
+## [289]   89  1545+ 1283   388  2023+ 1990+  140   759  2145+  168+ 1843+ 2188+
+## [301] 1960+  874    34   438   396   867  1885+  148  1522+ 2233+ 1795+   13 
+## [313] 1467+ 1682+ 2063+ 1302+   56  1666+ 1708+ 1384+  644   239  2095+ 2065+
+## [325]  588   432   308  1779+  197  2183+ 1368+  193  2239+ 1479+ 1414+  599 
+## [337] 1834+ 1290+ 1968+ 2123+  385   698+ 2255+ 1319+ 1465+ 1552  1883+  409 
+## [349]  144   157  1370+  193+  128   671   670  1960+ 1320+  679  1815+ 2149+
+## [361]  748  1901+ 2229+  964  1379+  146   179     6+ 1755+ 2043+  258   460 
+## [373]  575   364  2344+ 1953+  386  1164   374  1683+ 1704+   86+  262   187 
+## [385]   65   355    36+ 1727+ 1855+  215   319  1861+   21+  497  1385+    9 
+## [397]  418  2028+  476  1744+ 1952+  344   464  1742+  355  2222+  226   356 
+## [409] 1405+  210   907  2276+  104   565   727   385    20   333   578  1988+
+## [421] 1349+ 2007+  255   522   539    23  1714+ 2056+  341   258  2237+ 1102 
+## [433] 1729+ 2318+    9+  411    59+  805  2058+  697  2048+ 2034+  696   411 
+## [445] 2083+  388   342  1544+   44   326  2200+   28  1360+  658   621   307 
+## [457]  248  1652+ 1623+  540   166   246   458   329  2017+ 1129  1720+ 1703+
+## [469]  167  1584+    9+ 1021   465  1308+ 1681+ 1846+ 1241  1602+ 1813+ 1742+
+## [481] 1459+   95  1559+   24   465  1333+  419  1924+   85  1537   246  1774+
+## [493] 1999+ 2233+ 1367+  267  1085  2052+  742   516+  499  1907+  400  1792+
+## [505] 1698+  774   833  2253+ 1383+ 1039+  148   447   476   736  1485+  567+
+## [517]   27  1745+  313  1739+ 2043+ 1760+   45   145  1989+  242  1099+  506 
+## [529] 2044+ 1497+  156   456  1695+ 2299+ 1281+ 1990+   24   495   743  2419+
+## [541] 1764+  170  1331+  112   295   359    32    27  1374+  120+  365   144 
+## [553]  168  1901+  275   826  1704+  432+ 1780+   49+ 1313+   24+ 2126+  609 
+## [565]  203  1245   436+ 1825+ 1915  2150+ 1710+ 2125+ 1594+ 1414+ 1455+ 1799+
+## [577] 1728+ 1688+ 1113+  185    10+  811  1480+  515   122  2179+  420   248 
+## [589]   24   906+  486   273  1220    40   443   383   829   160+  275   400 
+## [601]  768  1347+ 1374+  375  1456+   27    93+ 1943+ 2041+  517   252   293 
+## [613] 1417+  752  1322+ 2070+   16  2191+  334  1370  2369+ 1401+  664   259 
+## [625] 2308+ 2335+  120  2055+ 1730+ 1373+  563  1480+  884  1386+ 1845+ 1313+
+## [637]  410   697   253    21    22+  237  2394+   17+  181    25+</code></pre>
+</div>
+<div id="kaplan-meier法" class="section level4">
+<h4>Kaplan-Meier法</h4>
+<ul>
+<li><p>ノンパラメトリック法による生存時間を当てはめる関数 survfit</p></li>
+<li><p>デフォルトはカプラン・マイヤー推定法</p></li>
+</ul>
+</div>
+<div id="生存曲線を描く" class="section level4">
+<h4>生存曲線を描く</h4>
+<pre class="r"><code>plot(ge.model,lty=1:2,xlab = &quot;Survival time&quot;, ylab = &quot;Overall survival&quot;, col = 1:2) %&gt;% legend(locator(1),c(&quot;A&quot;,&quot;B&quot;), lty=c(1,2))</code></pre>
+<p><img src="../../post/survival_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
+<pre class="r"><code>## 実際に描くときはlegendを併記するとグラフに追記できる</code></pre>
+<p>うまくlegendが追加できない。ggplot2を使って記載する方法もある。</p>
+<p>ggplotを用いてカプランマイヤー曲線を描く。</p>
+<p>ggplotはdata.frame型を使わなければならないので、fortifyを定義してやる必要がある。</p>
+<pre class="r"><code>fortify.survfit &lt;- function(survfit.data) {
+  data.frame(time = survfit.data$time,
+             n.risk = survfit.data$n.risk,
+             n.event = survfit.data$n.event,
+             n.censor = survfit.data$n.censor,
+             surv = survfit.data$surv,
+             std.err = survfit.data$std.err,
+             upper = survfit.data$upper,
+             lower = survfit.data$lower,
+             strata = rep(names(survfit.data$strata), survfit.data$strata))
+}
+
+head(ggplot2::fortify(ge.model))</code></pre>
+<pre><code>##   time n.risk n.event n.censor      surv     std.err upper     lower strata
+## 1    6    317       0        1 1.0000000 0.000000000     1 1.0000000  trt=A
+## 2    9    316       0        2 1.0000000 0.000000000     1 1.0000000  trt=A
+## 3   13    314       1        0 0.9968153 0.003189797     1 0.9906028  trt=A
+## 4   14    313       0        1 0.9968153 0.003189797     1 0.9906028  trt=A
+## 5   15    312       0        1 0.9968153 0.003189797     1 0.9906028  trt=A
+## 6   16    311       1        1 0.9936101 0.004532899     1 0.9848216  trt=A</code></pre>
+<pre class="r"><code>library(ggplot2)
+
+ge.model %&gt;% ggplot() + geom_line(aes_string(x = &#39;time&#39;, y = &#39;surv&#39;, colour = &#39;strata&#39;)) + 
+  geom_ribbon(aes_string(x = &#39;time&#39;, ymin = &#39;lower&#39;, ymax = &#39;upper&#39;, fill = &#39;strata&#39;), alpha = 0.5) + 
+  ylim(0,1) +
+  xlab(&quot;survival time&quot;) + ylab(&quot;survival rate&quot;) + ggtitle(&quot;Kaplan-Meier曲線&quot;)</code></pre>
+<p><img src="../../post/survival_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
+<pre class="r"><code>#+ scale_y_continuous(labels = scales::percent)</code></pre>
+<p>打ち切りも表したいときは、</p>
+<pre class="r"><code>ge.censor &lt;- ggplot2::fortify(ge.model)  </code></pre>
+<pre class="r"><code>ge.censor %&gt;% ggplot() + geom_line(aes_string(x = &#39;time&#39;, y = &#39;surv&#39;, colour = &#39;strata&#39;)) + 
+  geom_ribbon(aes_string(x = &#39;time&#39;, ymin = &#39;lower&#39;, ymax = &#39;upper&#39;, fill = &#39;strata&#39;), alpha = 0.5) + 
+  geom_point(data = ge.censor[ge.censor$n.censor &gt; 0,],
+             aes_string(x = &#39;time&#39;, y = &#39;surv&#39;), shape = &#39;+&#39;, size = 2) +
+  ylim(0,1) +
+  xlab(&quot;survival time&quot;) + ylab(&quot;survival rate&quot;) + ggtitle(&quot;Kaplan-Meier曲線&quot;)</code></pre>
+<p><img src="../../post/survival_files/figure-html/unnamed-chunk-11-1.png" width="672" /></p>
+<p>Kaplan-Meier曲線を見る限り、比例ハザード性は保たれているようである。</p>
+</div>
+<div id="ログランク検定" class="section level4">
+<h4>ログランク検定</h4>
+<p>AとBによる生存曲線を比較する。</p>
+<pre class="r"><code>survdiff(Surv(myeloid$futime, myeloid$death) ~ myeloid$trt)</code></pre>
+<pre><code>## Call:
+## survdiff(formula = Surv(myeloid$futime, myeloid$death) ~ myeloid$trt)
+## 
+##                 N Observed Expected (O-E)^2/E (O-E)^2/V
+## myeloid$trt=A 317      171      143      5.28      9.59
+## myeloid$trt=B 329      149      177      4.29      9.59
+## 
+##  Chisq= 9.6  on 1 degrees of freedom, p= 0.002</code></pre>
+<p>帰無仮説は「両群の生存曲線に差がない」である。</p>
+<p>今回の結果はp値=0.002であり生存曲線に差があるという結果になる。</p>
+<p>ただし、ログランク検定では患者の背景因子などは調整されていない。</p>
+</div>
+<div id="cox比例ハザード" class="section level4">
+<h4>Cox比例ハザード</h4>
+<p>先に描いた生存曲線から比例ハザード性は保たれていると考えられる。</p>
+<p>今回は性別くらいしか調整する変数はないが、それを加えて解析を行う。</p>
+<pre class="r"><code>model.cox &lt;- coxph(Surv(futime, death) ~ trt + sex, data = myeloid)
+summary(model.cox)</code></pre>
+<pre><code>## Call:
+## coxph(formula = Surv(futime, death) ~ trt + sex, data = myeloid)
+## 
+##   n= 646, number of events= 320 
+## 
+##         coef exp(coef) se(coef)      z Pr(&gt;|z|)   
+## trtB -0.3582    0.6989   0.1129 -3.174  0.00151 **
+## sexm  0.1150    1.1219   0.1128  1.020  0.30782   
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+##      exp(coef) exp(-coef) lower .95 upper .95
+## trtB    0.6989     1.4307    0.5602     0.872
+## sexm    1.1219     0.8913    0.8994     1.399
+## 
+## Concordance= 0.549  (se = 0.016 )
+## Likelihood ratio test= 10.56  on 2 df,   p=0.005
+## Wald test            = 10.53  on 2 df,   p=0.005
+## Score (logrank) test = 10.62  on 2 df,   p=0.005</code></pre>
+<p>性別による生存率に違いはない。</p>
+<p>治療BについてはHR 0.699 (95%CI 0.560 - 0.872)という結果で、治療B群の方が死亡率を有意に低下させる。</p>
+<p>【参考文献】</p>
+<p>ggplotでカプランマイヤー曲線を描く際に、こちらのサイトを参考にさせていただいた。</p>
+<p><a href="http://sinhrks.hatenablog.com/entry/2014/10/04/195825" class="uri">http://sinhrks.hatenablog.com/entry/2014/10/04/195825</a></p>
+</div>
+
+    </div>
+
+    
+
+
+
+
+
+
+<div class="article-tags">
+  
+  <a class="badge badge-light" href="../../tag/%E7%94%9F%E5%AD%98%E6%99%82%E9%96%93%E8%A7%A3%E6%9E%90/">生存時間解析</a>
+  
+</div>
+
+
+
+<div class="share-box" aria-hidden="true">
+  <ul class="share">
+    
+      
+      
+      
+        
+      
+      
+      
+      <li>
+        <a href="https://twitter.com/intent/tweet?url=../../post/survival/&amp;text=R%e3%81%ab%e3%82%88%e3%82%8b%e7%94%9f%e5%ad%98%e6%99%82%e9%96%93%e8%a7%a3%e6%9e%90%e3%81%ae%e5%ae%9f%e8%a3%85" target="_blank" rel="noopener" class="share-btn-twitter">
+          <i class="fab fa-twitter"></i>
+        </a>
+      </li>
+    
+      
+      
+      
+        
+      
+      
+      
+      <li>
+        <a href="https://www.facebook.com/sharer.php?u=/post/survival/&amp;t=R%e3%81%ab%e3%82%88%e3%82%8b%e7%94%9f%e5%ad%98%e6%99%82%e9%96%93%e8%a7%a3%e6%9e%90%e3%81%ae%e5%ae%9f%e8%a3%85" target="_blank" rel="noopener" class="share-btn-facebook">
+          <i class="fab fa-facebook"></i>
+        </a>
+      </li>
+    
+      
+      
+      
+        
+      
+      
+      
+      <li>
+        <a href="mailto:?subject=R%e3%81%ab%e3%82%88%e3%82%8b%e7%94%9f%e5%ad%98%e6%99%82%e9%96%93%e8%a7%a3%e6%9e%90%e3%81%ae%e5%ae%9f%e8%a3%85&amp;body=/post/survival/" target="_blank" rel="noopener" class="share-btn-email">
+          <i class="fas fa-envelope"></i>
+        </a>
+      </li>
+    
+      
+      
+      
+        
+      
+      
+      
+      <li>
+        <a href="https://www.linkedin.com/shareArticle?url=../../post/survival/&amp;title=R%e3%81%ab%e3%82%88%e3%82%8b%e7%94%9f%e5%ad%98%e6%99%82%e9%96%93%e8%a7%a3%e6%9e%90%e3%81%ae%e5%ae%9f%e8%a3%85" target="_blank" rel="noopener" class="share-btn-linkedin">
+          <i class="fab fa-linkedin-in"></i>
+        </a>
+      </li>
+    
+      
+      
+      
+        
+      
+      
+      
+      <li>
+        <a href="whatsapp://send?text=R%e3%81%ab%e3%82%88%e3%82%8b%e7%94%9f%e5%ad%98%e6%99%82%e9%96%93%e8%a7%a3%e6%9e%90%e3%81%ae%e5%ae%9f%e8%a3%85%20/post/survival/" target="_blank" rel="noopener" class="share-btn-whatsapp">
+          <i class="fab fa-whatsapp"></i>
+        </a>
+      </li>
+    
+      
+      
+      
+        
+      
+      
+      
+      <li>
+        <a href="https://service.weibo.com/share/share.php?url=../../post/survival/&amp;title=R%e3%81%ab%e3%82%88%e3%82%8b%e7%94%9f%e5%ad%98%e6%99%82%e9%96%93%e8%a7%a3%e6%9e%90%e3%81%ae%e5%ae%9f%e8%a3%85" target="_blank" rel="noopener" class="share-btn-weibo">
+          <i class="fab fa-weibo"></i>
+        </a>
+      </li>
+    
+  </ul>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+    
+    
+
+
+
+
+
+  
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <div class="article-widget content-widget-hr">
+    <h3>Related</h3>
+    <ul>
+      
+      <li><a href="../../post/propensity_score/">Rによる傾向スコアの実装</a></li>
+      
+      <li><a href="../../post/linear/">線形回帰モデルの基礎</a></li>
+      
+      <li><a href="../../post/logi/">Logistic回帰の実装</a></li>
+      
+      <li><a href="../../post/2015-07-23-r-rmarkdown/">Rによるグラフ基礎</a></li>
+      
+    </ul>
+  </div>
+  
+
+
+
+
+
+  </div>
+</article>
+
+      
+
+    
+    
+    
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js" integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0=" crossorigin="anonymous"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.imagesloaded/4.1.4/imagesloaded.pkgd.min.js" integrity="sha256-lqvxZrPLtfffUl2G/e7szqSvPBILGbwmsGE1MKlOi0Q=" crossorigin="anonymous"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.isotope/3.0.6/isotope.pkgd.min.js" integrity="sha256-CBrpuqrMhXwcLLUd5tvQ4euBHCdh7wGlDfNz8vbu/iI=" crossorigin="anonymous"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.5.7/jquery.fancybox.min.js" integrity="sha256-yt2kYMy0w8AbtF89WXb2P1rfjcP/HTHLT7097U8Y5b8=" crossorigin="anonymous"></script>
+
+      
+
+      
+        
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/highlight.min.js" integrity="sha256-eOgo0OtLL4cdq7RdwRUiGKLX9XsIJ7nGhWEKbohmVAQ=" crossorigin="anonymous"></script>
+        
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/languages/r.min.js"></script>
+        
+      
+
+    
+
+    
+    
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.5.1/leaflet.js" integrity="sha256-EErZamuLefUnbMBQbsEqu1USa+btR2oIlCpBJbyD4/g=" crossorigin="anonymous"></script>
+    
+
+    
+    
+    <script>const code_highlighting = true;</script>
+    
+
+    
+    
+    <script>const isSiteThemeDark = false;</script>
+    
+
+    
+    
+    
+    
+    
+    
+    <script>
+      const search_config = {"indexURI":"/index.json","minLength":1,"threshold":0.3};
+      const i18n = {"no_results":"No results found","placeholder":"Search...","results":"results found"};
+      const content_type = {
+        'post': "Posts",
+        'project': "Projects",
+        'publication' : "Publications",
+        'talk' : "Talks",
+        'slides' : "Slides"
+        };
+    </script>
+    
+
+    
+    
+
+    
+    
+    <script id="search-hit-fuse-template" type="text/x-template">
+      <div class="search-hit" id="summary-{{key}}">
+      <div class="search-hit-content">
+        <div class="search-hit-name">
+          <a href="{{relpermalink}}">{{title}}</a>
+          <div class="article-metadata search-hit-type">{{type}}</div>
+          <p class="search-hit-description">{{snippet}}</p>
+        </div>
+      </div>
+      </div>
+    </script>
+    
+
+    
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/3.2.1/fuse.min.js" integrity="sha256-VzgmKYmhsGNNN4Ph1kMW+BjoYJM2jV5i4IlFoeZA9XI=" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/jquery.mark.min.js" integrity="sha256-4HLtjeVgH0eIB3aZ9mLYF6E8oU5chNdjU6p6rrXpl9U=" crossorigin="anonymous"></script>
+    
+
+    
+    
+
+    
+    
+
+    
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+      
+    
+    
+    
+    
+    <script src="../../js/academic.min.66c553246b0f279a03be6e5597f72b52.js"></script>
+
+    
+
+
+
+
+
+
+  
+  
+  <div class="container">
+    <footer class="site-footer">
+  
+  <p class="powered-by">
+    
+      <a href="../../privacy/">Privacy Policy</a>
+    
+    
+       &middot; 
+      <a href="../../terms/">Terms</a>
+    
+  </p>
+  
+
+  <p class="powered-by">
+    
+  </p>
+
+  
+  
+
+
+
+
+
+
+  <p class="powered-by">
+    Powered by the
+    <a href="https://sourcethemes.com/academic/" target="_blank" rel="noopener">Academic theme</a> for
+    <a href="https://gohugo.io" target="_blank" rel="noopener">Hugo</a>.
+
+    
+    <span class="float-right" aria-hidden="true">
+      <a href="#" class="back-to-top">
+        <span class="button_icon">
+          <i class="fas fa-chevron-up fa-2x"></i>
+        </span>
+      </a>
+    </span>
+    
+  </p>
+</footer>
+
+  </div>
+  
+
+  
+<div id="modal" class="modal fade" role="dialog">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Cite</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <pre><code class="tex hljs"></code></pre>
+      </div>
+      <div class="modal-footer">
+        <a class="btn btn-outline-primary my-1 js-copy-cite" href="#" target="_blank">
+          <i class="fas fa-copy"></i> Copy
+        </a>
+        <a class="btn btn-outline-primary my-1 js-download-cite" href="#" target="_blank">
+          <i class="fas fa-download"></i> Download
+        </a>
+        <div id="modal-error"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,311 @@
+---
+# Documentation: https://sourcethemes.com/academic/docs/managing-content/
+
+title: "Rによる傾向スコアの実装"
+subtitle: ""
+summary: "Rによる傾向スコアの実装について簡単に"
+authors: [Kumakt]
+tags: ["傾向スコア"]
+categories: ["R"]
+date: 2020-07-22T22:16:38+09:00
+lastmod: 2020-07-22T22:16:38+09:00
+featured: false
+draft: false
+math: true
+
+# Featured image
+# To use, add an image named `featured.jpg/png` to your page's folder.
+# Focal points: Smart, Center, TopLeft, Top, TopRight, Left, Right, BottomLeft, Bottom, BottomRight.
+image:
+  caption: ""
+  focal_point: ""
+  preview_only: false
+
+# Projects (optional).
+#   Associate this post with one or more of your projects.
+#   Simply enter your project's folder or file name without extension.
+#   E.g. `projects = ["internal-project"]` references `content/project/deep-learning/index.md`.
+#   Otherwise, set `projects = []`.
+projects: []
+---
+
+
+
+<div id="サンプルデータを作成する" class="section level3">
+<h3>サンプルデータを作成する</h3>
+<p>適当なパッケージがないため、仮想データを作成する。</p>
+<ul>
+<li><p>Effect of Targeted Polymyxin B Hemoperfusion on 28-Day Mortality in Patients With Septic Shock and Elevated Endotoxin Level</p></li>
+<li><p>The EUPHRATES Randomized Clinical Trialより</p></li>
+<li><p>元ネタは敗血症性ショックに対するエンドトキシン吸着療法の多施設共同RCT(60施設)</p></li>
+<li><p>PMX療法(透析)対シャム療法(偽透析：透析している振り)</p></li>
+<li><p>サンプル数:450名のRCT</p></li>
+<li><p>Age, Sex, 平均血圧(Arterial pressure mean:MAP)、重症度スコア(APACHEⅡ)、人工呼吸器の有無(Mechanical<br />
+ventilation)、菌血症の有無(Bacteremia)</p></li>
+<li><p>介入:エンドトキシン吸着療法(PMX)</p></li>
+<li><p>アウトカム:28日後死亡(twentyeight_day_mortality)</p></li>
+<li><p>今回は多施設観察研究と想定し施設数も作成して、10施設とする</p></li>
+</ul>
+<p>JAMA</p>
+<p><a href="https://jamanetwork.com/journals/jama/fullarticle/2706139" class="uri">https://jamanetwork.com/journals/jama/fullarticle/2706139</a></p>
+</div>
+<div id="パッケージの読み込み" class="section level3">
+<h3>パッケージの読み込み</h3>
+<pre class="r"><code>library(dplyr)</code></pre>
+<pre><code>## 
+##  次のパッケージを付け加えます: &#39;dplyr&#39;</code></pre>
+<pre><code>##  以下のオブジェクトは &#39;package:stats&#39; からマスクされています: 
+## 
+##      filter, lag</code></pre>
+<pre><code>##  以下のオブジェクトは &#39;package:base&#39; からマスクされています: 
+## 
+##      intersect, setdiff, setequal, union</code></pre>
+<pre class="r"><code># パイプを使うため
+library(magrittr)
+# シミュレーションデータを作るため
+library(simstudy)</code></pre>
+</div>
+<div id="仮想データの実装" class="section level3">
+<h3>仮想データの実装</h3>
+<pre class="r"><code>set.seed(123) # seedを設定することで必ず同じデータが毎回できるので再現性の固定
+# まず施設IDの作成
+b &lt;- defData(varname = &quot;institution_id&quot;, dist = &quot;noZeroPoisson&quot;, formula = 3)
+c &lt;- genData(450, b)
+
+# 各変数の作成
+a &lt;- data.frame(rnorm(450,59,8),rbinom(450,1,prob=0.6),rnorm(450,72,5),rnorm(450,28,5),rbinom(450,1,0.94)
+               ,rbinom(450,1,0.30),rbinom(450,1,0.5),rbinom(450,1,0.34))
+
+colnames(a) &lt;- c(&#39;Age&#39;,&#39;Sex&#39;,&#39;MAP&#39;,&#39;APACHEⅡ&#39;,&#39;Mechanical_ventilation&#39;,&#39;Bacteremia&#39;,&#39;PMX&#39;,&#39;twentyeight_day_mortality&#39;)
+# 列の名前を付ける 
+# sex 1=male, Mechanical_ventilation yes=1, Bacteremia yes=1, PMX yes=1, 28day_mortality yes=1 </code></pre>
+<p>両者を結合する。</p>
+<pre class="r"><code>pmx &lt;- cbind.data.frame(c,a)
+
+pmx &lt;- as.data.frame(pmx)</code></pre>
+</div>
+<div id="作成したデータの確認" class="section level3">
+<h3>作成したデータの確認</h3>
+<pre class="r"><code>summary(pmx)</code></pre>
+<pre><code>##        id        institution_id        Age             Sex        
+##  Min.   :  1.0   Min.   : 1.000   Min.   :36.52   Min.   :0.0000  
+##  1st Qu.:113.2   1st Qu.: 2.000   1st Qu.:54.19   1st Qu.:0.0000  
+##  Median :225.5   Median : 3.000   Median :59.33   Median :1.0000  
+##  Mean   :225.5   Mean   : 3.142   Mean   :59.11   Mean   :0.5822  
+##  3rd Qu.:337.8   3rd Qu.: 4.000   3rd Qu.:64.59   3rd Qu.:1.0000  
+##  Max.   :450.0   Max.   :10.000   Max.   :79.57   Max.   :1.0000  
+##       MAP           APACHEⅡ      Mechanical_ventilation   Bacteremia    
+##  Min.   :59.25   Min.   :12.76   Min.   :0.0000         Min.   :0.0000  
+##  1st Qu.:68.47   1st Qu.:25.05   1st Qu.:1.0000         1st Qu.:0.0000  
+##  Median :71.81   Median :28.54   Median :1.0000         Median :0.0000  
+##  Mean   :72.00   Mean   :28.30   Mean   :0.9267         Mean   :0.2689  
+##  3rd Qu.:75.03   3rd Qu.:31.90   3rd Qu.:1.0000         3rd Qu.:1.0000  
+##  Max.   :88.95   Max.   :44.45   Max.   :1.0000         Max.   :1.0000  
+##       PMX         twentyeight_day_mortality
+##  Min.   :0.0000   Min.   :0.0000           
+##  1st Qu.:0.0000   1st Qu.:0.0000           
+##  Median :0.0000   Median :0.0000           
+##  Mean   :0.4889   Mean   :0.3467           
+##  3rd Qu.:1.0000   3rd Qu.:1.0000           
+##  Max.   :1.0000   Max.   :1.0000</code></pre>
+<pre class="r"><code>str(pmx)</code></pre>
+<pre><code>## &#39;data.frame&#39;:    450 obs. of  10 variables:
+##  $ id                       : int  1 2 3 4 5 6 7 8 9 10 ...
+##  $ institution_id           : num  2 4 3 5 6 1 3 5 3 3 ...
+##  $ Age                      : num  59.5 53.4 53.3 66.1 50.9 ...
+##  $ Sex                      : int  1 1 1 1 1 1 1 0 1 1 ...
+##  $ MAP                      : num  66.9 68 73.5 80.2 77.4 ...
+##  $ APACHEⅡ                  : num  27.3 20.8 24 32.4 32.5 ...
+##  $ Mechanical_ventilation   : int  1 1 1 1 1 1 1 1 0 1 ...
+##  $ Bacteremia               : int  0 0 0 0 0 1 1 0 0 0 ...
+##  $ PMX                      : int  0 0 0 1 0 0 0 0 1 1 ...
+##  $ twentyeight_day_mortality: int  1 0 0 0 0 1 0 0 1 0 ...</code></pre>
+<p>おおむね狙い通りのデータになっていることが分かる。</p>
+<p>今回は施設というクラスターは無視して傾向スコアを用いて解析を実装する。</p>
+</div>
+<div id="傾向スコアの作成" class="section level3">
+<h3>傾向スコアの作成</h3>
+<p>実際の論文ではRCTのため傾向スコアや多変量解析は行われていない。</p>
+<p>今回は観察研究という設定で計算する。</p>
+<p>PMXを行うか否かについて関係する共変量を設定する。</p>
+<p>まず共変量をオブジェクトに格納する。</p>
+<p>こうすることの利点はモデルを作る際に見やすくなることである。</p>
+<pre class="r"><code>covariateNames &lt;- c(
+  &quot;Age&quot;,
+  &quot;Sex&quot;,
+  &quot;MAP&quot;,
+  &quot;APACHEⅡ&quot;,
+  &quot;Mechanical_ventilation&quot;
+)</code></pre>
+<div id="治療指標の作成" class="section level4">
+<h4>治療指標の作成</h4>
+<p>便利のために、pmxとは別に治療指標の変数を作成する。治療指標は因子型としておく。</p>
+<pre class="r"><code>pmx$treat &lt;- as.factor(pmx$PMX)</code></pre>
+<p>####　連続予測子の標準化</p>
+<pre class="r"><code>#標準化された連続予測子
+for (var in covariateNames) {
+  if (class(pmx[,var])!=&quot;factor&quot;) { pmx[,var] = (pmx[,var]-mean(pmx[,var]))/sd(pmx[,var]) }
+  }</code></pre>
+</div>
+<div id="傾向スコアの推定" class="section level4">
+<h4>傾向スコアの推定</h4>
+<pre class="r"><code>#ロジスティック回帰モデルの式の作成準備
+ps.formula &lt;- paste(covariateNames, collapse=&quot;+&quot;) 
+ps.formula &lt;- formula(paste(&quot;treat~&quot;,ps.formula))
+print(ps.formula)</code></pre>
+<pre><code>## treat ~ Age + Sex + MAP + APACHEⅡ + Mechanical_ventilation</code></pre>
+<pre class="r"><code>#クラスタリングを無視した傾向スコアの推定
+#ps.model &lt;- glm(ps.formula, data = pmx, family=binomial)
+
+ps.model &lt;- pmx %&gt;% glm(ps.formula, data = ., family=binomial(link = &quot;logit&quot;))
+
+#クラスタリングを無視した傾向スコアを得る
+pmx$ps &lt;- fitted(ps.model)</code></pre>
+</div>
+<div id="傾向スコアの評価" class="section level4">
+<h4>傾向スコアの評価</h4>
+<pre class="r"><code>library(pROC)
+
+ROC &lt;- pmx %&gt;% roc(treat ~ ps, data = ., ci = TRUE)
+ROC</code></pre>
+<pre><code>## 
+## Call:
+## roc.formula(formula = treat ~ ps, data = ., ci = TRUE)
+## 
+## Data: ps in 230 controls (treat 0) &lt; 220 cases (treat 1).
+## Area under the curve: 0.5255
+## 95% CI: 0.472-0.579 (DeLong)</code></pre>
+<p>今回はAUC 0.5255と低い値であり、モデルの精度として良くないようである。</p>
+</div>
+<div id="common-supportの評価" class="section level4">
+<h4>Common supportの評価</h4>
+<p>傾向スコアにばらつきがないかを評価する</p>
+<pre class="r"><code>hist(pmx$ps[pmx$treat==0], density = 10, angle = 45, main=&quot;Propensity Scores&quot;,
+     breaks=seq(0,1,by=0.01),
+     xlim=c(0,1), ylim=c(0,50), xlab=&quot;Shaded = Untreated | Gray = PMX&quot;)
+hist(pmx$ps[pmx$treat==1], col=gray(0.4,0.25), breaks=seq(0,1,by=0.01),
+     xlim=c(0,1), ylim=c(0,50),add=T) </code></pre>
+<p><img src="/post/Propensity_score_files/figure-html/unnamed-chunk-12-1.png" width="672" /></p>
+<p>PMX群とコントロール群では傾向スコアの分布は同じくらいであることが分かる。</p>
+</div>
+</div>
+<div id="ateの推定" class="section level3">
+<h3>ATEの推定</h3>
+<p>今回は、試験の対象集団全体におけるPMXの効果を知りたいのであるからAverage treatment effect(ATE)を
+推定することとする。</p>
+<pre class="r"><code># 重みの計算
+pmx$psw &lt;- with(pmx, ifelse(treat==1, 1/ps, 1/(1-ps)))
+
+summary(pmx$psw)</code></pre>
+<pre><code>##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##   1.745   1.929   1.995   2.000   2.056   2.301</code></pre>
+<p>今回は傾向スコアに極端なweightはないが、もしある場合は対処を考える必要がある。</p>
+<p>方法として、</p>
+<ol style="list-style-type: decimal">
+<li><p>極端なweightがモデルの仕様の誤りによるものかどうかをチェックするために、傾向スコアモデルを再指定する</p></li>
+<li><p>傾向スコア法を変更する</p></li>
+<li><p>weight打切りを行う</p></li>
+<li><p>安定化weightを使用する。</p></li>
+</ol>
+<p>3については99%タイルでweightを切り捨てるという方法がある。</p>
+<p>4についてはweightを加重平均などで安定化する方法である。</p>
+<p>今回は不要だが、参考までにweightの安定化を行う。</p>
+<pre class="r"><code>#重みの正規化
+pmx$psw &lt;- pmx$psw/mean(pmx$psw)
+# 統合
+with(pmx, by(psw, PMX, summary))</code></pre>
+<pre><code>## PMX: 0
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##  0.8724  0.9464  0.9803  0.9782  1.0087  1.1163 
+## ------------------------------------------------------------ 
+## PMX: 1
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##  0.9079  0.9842  1.0158  1.0228  1.0559  1.1506</code></pre>
+<p>安定化する前と比べてもほとんど変化はないことが分かる。</p>
+<p>今回は仮想データであるため、元々傾向スコアの分布が比較的均一であったため、安定化や切り捨ては不要で<br>
+ある。</p>
+<p>実際のデータでは極端なweightを取ることがあるため、対処が必要になることがある。</p>
+</div>
+<div id="両群のバランス評価" class="section level3">
+<h3>両群のバランス評価</h3>
+<p>介入群とコントロール群でバランスがとれているか確認が必要である。</p>
+<p>そのためにtwangパッケージを用いる。</p>
+<pre class="r"><code>require(twang)
+
+baseline.balance &lt;- bal.stat(data=pmx,#データセット
+                          var=covariateNames,#バランスチェックの確認に含む変数のリスト
+                          treat.var=&quot;treat&quot;,#介入・曝露の変数
+                          w.all=1,#傾向スコアのweightなどがある場合、デフォルトは1 (no weighting)
+                          sampw=1,#サンプリングウェイト (no weighting)
+                          get.means=T, #平均と分散を計算するかどうか
+                          get.ks=F,#コルモゴロフ・スミルノフ統計量を計算するかどうか
+                          estimand=&quot;ATE&quot;,#ATEとATTどちらか
+                          multinom=F)#多項傾向スコアを用いるかどうか
+
+baseline.balance.es &lt;- baseline.balance$results
+
+summary(abs(baseline.balance.es$std.eff.sz))</code></pre>
+<pre><code>##     Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
+## 0.008427 0.022860 0.029534 0.035160 0.044532 0.070447</code></pre>
+<p>標準化効果量は最大で0.070447とバランスはとれているようである。</p>
+<p>続いて傾向スコアで重みづけした後のバランス評価を行う。</p>
+<pre class="r"><code>psw.balance &lt;- bal.stat(data=pmx,#データセット
+                          var=covariateNames,#バランスチェックの確認に含む変数のリスト
+                          treat.var=&quot;treat&quot;,#介入・曝露の変数
+                          w.all=pmx$psw,#傾向スコアのweightなどがある場合
+                          sampw=1,#サンプリングウェイト (no weighting)
+                          get.means=T, #平均と分散を計算するかどうか
+                          get.ks=F,#コルモゴロフ・スミルノフ統計量を計算するかどうか
+                          estimand=&quot;ATE&quot;,#ATEとATTどちらか
+                          multinom=F)#多項傾向スコアを用いるかどうか
+
+
+psw.balance.table &lt;- psw.balance$results
+
+summary(abs(psw.balance.table$std.eff.sz))</code></pre>
+<pre><code>##      Min.   1st Qu.    Median      Mean   3rd Qu.      Max. 
+## 5.949e-05 9.701e-05 1.924e-04 2.899e-04 5.454e-04 5.550e-04</code></pre>
+<p>標準効果量はかなり小さく、今回のデータでは重みづけする前後でもバランスはとれていた。</p>
+</div>
+<div id="治療効果の評価" class="section level3">
+<h3>治療効果の評価</h3>
+<p>今回はデータ作成の都合上、簡単のために生存までの時間は無視してロジスティック回帰モデルで評価する。</p>
+<p>そのために変数を論理型に変更しておく。</p>
+<pre class="r"><code>pmx$twentyeight_day_mortality &lt;- as.logical(pmx$twentyeight_day_mortality)
+pmx$PMX &lt;- as.logical(pmx$PMX)
+
+str(pmx$twentyeight_day_mortality)</code></pre>
+<pre><code>##  logi [1:450] TRUE FALSE FALSE FALSE FALSE TRUE ...</code></pre>
+<p>論理型に変換できたことを確認</p>
+<pre class="r"><code>final.model &lt;- pmx %&gt;%
+  glm(twentyeight_day_mortality ~ PMX, family = binomial(link = &quot;logit&quot;), weights = psw, data = .)</code></pre>
+<pre><code>## Warning in eval(family$initialize): non-integer #successes in a binomial glm!</code></pre>
+<p>ここでの警告はstack.flowを見る限り問題はなさそう。</p>
+<p><a href="https://stackoverflow.com/questions/12953045/warning-non-integer-successes-in-a-binomial-glm-survey-packages" class="uri">https://stackoverflow.com/questions/12953045/warning-non-integer-successes-in-a-binomial-glm-survey-packages</a></p>
+<p>二重にロバストな推定</p>
+<pre class="r"><code>library(lmtest)
+library(sandwich)
+result &lt;- coeftest(final.model, vcov = sandwich)</code></pre>
+<pre class="r"><code>summary(result)</code></pre>
+<pre><code>##     Estimate          Std. Error        z value           Pr(&gt;|z|)        
+##  Min.   :-0.69787   Min.   :0.1403   Min.   :-4.9734   Min.   :0.0000007  
+##  1st Qu.:-0.48800   1st Qu.:0.1549   1st Qu.:-3.5517   1st Qu.:0.1188765  
+##  Median :-0.27813   Median :0.1694   Median :-2.1299   Median :0.2377523  
+##  Mean   :-0.27813   Mean   :0.1694   Mean   :-2.1299   Mean   :0.2377523  
+##  3rd Qu.:-0.06826   3rd Qu.:0.1839   3rd Qu.:-0.7082   3rd Qu.:0.3566282  
+##  Max.   : 0.14161   Max.   :0.1985   Max.   : 0.7136   Max.   :0.4755040</code></pre>
+<pre class="r"><code>exp(result[2])</code></pre>
+<pre><code>## [1] 1.152124</code></pre>
+<pre class="r"><code>exp(-1.96*result[4])</code></pre>
+<pre><code>## [1] 0.6777543</code></pre>
+<pre class="r"><code>exp(1.96*result[4])</code></pre>
+<pre><code>## [1] 1.475461</code></pre>
+<p>PMXのオッズ比は1.15 (95%CI 0.68 - 1.48)であった。</p>
+<p>RRに変換すると、1.068となる。</p>
+<p><a href="https://clincalc.com/Stats/ConvertOR.aspx#1" class="uri">https://clincalc.com/Stats/ConvertOR.aspx#1</a></p>
+<p>これは元論文の1.09と近いが、そもそも介入と非介入の割合が50%なので、リスク比に変換するのは正しくないであろう。</p>
+<div id="参考文献" class="section level4">
+<h4>【参考文献】</h4>
+<p>Practical Propensity Score Methods Using R SAGE Publications, Inc</p>
+</div>
+</div>

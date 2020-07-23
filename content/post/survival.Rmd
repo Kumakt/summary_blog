@@ -1,0 +1,214 @@
+---
+# Documentation: https://sourcethemes.com/academic/docs/managing-content/
+
+title: "Rによる生存時間解析の実装"
+subtitle: ""
+summary: "Rによる生存時間解析の実装について簡単に"
+authors: [Kumakt]
+tags: ["生存時間解析"]
+categories: ["R"]
+date: 2020-07-15T22:16:38+09:00
+lastmod: 2020-07-15T22:16:38+09:00
+featured: false
+draft: false
+math: true
+
+# Featured image
+# To use, add an image named `featured.jpg/png` to your page's folder.
+# Focal points: Smart, Center, TopLeft, Top, TopRight, Left, Right, BottomLeft, Bottom, BottomRight.
+image:
+  caption: ""
+  focal_point: ""
+  preview_only: false
+
+# Projects (optional).
+#   Associate this post with one or more of your projects.
+#   Simply enter your project's folder or file name without extension.
+#   E.g. `projects = ["internal-project"]` references `content/project/deep-learning/index.md`.
+#   Otherwise, set `projects = []`.
+projects: []
+---
+
+#### パッケージの読み込み
+
+- まずパッケージを読み込む
+
+```{r}
+# パッケージの読み込み
+library(survival)
+library(magrittr)
+```
+
+
+#### データの確認
+
+- summary関数とstr関数を用いる。
+
+- 必要に応じてグラフなどを書いてデータの分布を調べる。
+
+
+```{r}
+head(myeloid, n = 5)
+```
+
+
+先頭5行の表示
+
+
+```{r}
+summary(myeloid)
+# データの型確認
+str(myeloid)
+```
+
+
+ここで使うデータは、パッケージに付属のデータ：白血病患者に対する治療のA/Bでの効果を調べるデータ
+
+- id: subject identifier, 1-646, 
+- trt: treatment arm A or B,  
+- sex: f=female, m=male,  
+- futime: time to death or last follow-up,  
+- death:  1 if futime is a death, 0 for censoring,  
+- txtime: time to hematropetic stem cell transplant
+- crtime:  time to complete response,  rltime:  time to relapse of disease
+
+今回は治療A/Bと死亡までの差をみる
+
+欠損値が存在しているが、今回の解析には影響を与えない。
+
+
+#### 生存時間解析の準備
+
+```{r}
+ge.surv <- Surv(myeloid$futime, myeloid$death)
+head(ge.surv, n = 10)
+```
+ 
++はイベント打ち切り、無印はイベントがなかったことを示す
+
+```{r}
+#myeloid %>% 
+  Surv(myeloid$futime, myeloid$death)
+```
+
+
+
+#### Kaplan-Meier法
+
+```{r include=FALSE}
+ge.model <-survfit(Surv(futime,death) ~ trt, data = myeloid)
+summary(ge.model)
+```
+
+
+- ノンパラメトリック法による生存時間を当てはめる関数 survfit
+
+- デフォルトはカプラン・マイヤー推定法
+
+
+#### 生存曲線を描く
+
+```{r}
+plot(ge.model,lty=1:2,xlab = "Survival time", ylab = "Overall survival", col = 1:2) %>% legend(locator(1),c("A","B"), lty=c(1,2))
+
+## 実際に描くときはlegendを併記するとグラフに追記できる
+```
+
+うまくlegendが追加できない。ggplot2を使って記載する方法もある。
+
+ggplotを用いてカプランマイヤー曲線を描く。
+
+ggplotはdata.frame型を使わなければならないので、fortifyを定義してやる必要がある。
+
+```{r}
+fortify.survfit <- function(survfit.data) {
+  data.frame(time = survfit.data$time,
+             n.risk = survfit.data$n.risk,
+             n.event = survfit.data$n.event,
+             n.censor = survfit.data$n.censor,
+             surv = survfit.data$surv,
+             std.err = survfit.data$std.err,
+             upper = survfit.data$upper,
+             lower = survfit.data$lower,
+             strata = rep(names(survfit.data$strata), survfit.data$strata))
+}
+
+head(ggplot2::fortify(ge.model))
+```
+
+
+```{r}
+library(ggplot2)
+
+ge.model %>% ggplot() + geom_line(aes_string(x = 'time', y = 'surv', colour = 'strata')) + 
+  geom_ribbon(aes_string(x = 'time', ymin = 'lower', ymax = 'upper', fill = 'strata'), alpha = 0.5) + 
+  ylim(0,1) +
+  xlab("survival time") + ylab("survival rate") + ggtitle("Kaplan-Meier曲線")
+#+ scale_y_continuous(labels = scales::percent)
+```
+
+
+打ち切りも表したいときは、
+
+```{r}
+ge.censor <- ggplot2::fortify(ge.model)  
+```
+
+
+```{r}
+
+ge.censor %>% ggplot() + geom_line(aes_string(x = 'time', y = 'surv', colour = 'strata')) + 
+  geom_ribbon(aes_string(x = 'time', ymin = 'lower', ymax = 'upper', fill = 'strata'), alpha = 0.5) + 
+  geom_point(data = ge.censor[ge.censor$n.censor > 0,],
+             aes_string(x = 'time', y = 'surv'), shape = '+', size = 2) +
+  ylim(0,1) +
+  xlab("survival time") + ylab("survival rate") + ggtitle("Kaplan-Meier曲線")
+```
+
+
+Kaplan-Meier曲線を見る限り、比例ハザード性は保たれているようである。
+
+
+#### ログランク検定
+
+AとBによる生存曲線を比較する。
+
+```{r}
+survdiff(Surv(myeloid$futime, myeloid$death) ~ myeloid$trt)
+```
+
+
+帰無仮説は「両群の生存曲線に差がない」である。
+
+今回の結果はp値=0.002であり生存曲線に差があるという結果になる。
+
+ただし、ログランク検定では患者の背景因子などは調整されていない。
+
+
+#### Cox比例ハザード
+
+先に描いた生存曲線から比例ハザード性は保たれていると考えられる。
+
+今回は性別くらいしか調整する変数はないが、それを加えて解析を行う。
+
+```{r}
+model.cox <- coxph(Surv(futime, death) ~ trt + sex, data = myeloid)
+summary(model.cox)
+```
+
+
+性別による生存率に違いはない。
+
+治療BについてはHR 0.699 (95%CI 0.560 - 0.872)という結果で、治療B群の方が死亡率を有意に低下させる。
+
+
+
+
+【参考文献】
+
+ggplotでカプランマイヤー曲線を描く際に、こちらのサイトを参考にさせていただいた。
+
+http://sinhrks.hatenablog.com/entry/2014/10/04/195825
+
+
+

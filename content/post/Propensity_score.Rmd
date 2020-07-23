@@ -1,0 +1,349 @@
+---
+# Documentation: https://sourcethemes.com/academic/docs/managing-content/
+
+title: "Rによる傾向スコアの実装"
+subtitle: ""
+summary: "Rによる傾向スコアの実装について簡単に"
+authors: [Kumakt]
+tags: ["傾向スコア"]
+categories: ["R"]
+date: 2020-07-22T22:16:38+09:00
+lastmod: 2020-07-22T22:16:38+09:00
+featured: false
+draft: false
+math: true
+
+# Featured image
+# To use, add an image named `featured.jpg/png` to your page's folder.
+# Focal points: Smart, Center, TopLeft, Top, TopRight, Left, Right, BottomLeft, Bottom, BottomRight.
+image:
+  caption: ""
+  focal_point: ""
+  preview_only: false
+
+# Projects (optional).
+#   Associate this post with one or more of your projects.
+#   Simply enter your project's folder or file name without extension.
+#   E.g. `projects = ["internal-project"]` references `content/project/deep-learning/index.md`.
+#   Otherwise, set `projects = []`.
+projects: []
+---
+
+### サンプルデータを作成する
+
+適当なパッケージがないため、仮想データを作成する。
+
+- Effect of Targeted Polymyxin B Hemoperfusion on 28-Day Mortality in Patients With Septic Shock and Elevated Endotoxin Level
+
+- The EUPHRATES Randomized Clinical Trialより
+
+- 元ネタは敗血症性ショックに対するエンドトキシン吸着療法の多施設共同RCT(60施設)
+
+- PMX療法(透析)対シャム療法(偽透析：透析している振り)
+
+- サンプル数:450名のRCT
+
+- Age, Sex, 平均血圧(Arterial pressure mean:MAP)、重症度スコア(APACHEⅡ)、人工呼吸器の有無(Mechanical  
+  ventilation)、菌血症の有無(Bacteremia)
+  
+- 介入:エンドトキシン吸着療法(PMX)
+
+- アウトカム:28日後死亡(twentyeight_day_mortality)
+
+- 今回は多施設観察研究と想定し施設数も作成して、10施設とする
+
+JAMA
+
+https://jamanetwork.com/journals/jama/fullarticle/2706139
+
+### パッケージの読み込み
+
+```{r warning=FALSE}
+library(dplyr)
+# パイプを使うため
+library(magrittr)
+# シミュレーションデータを作るため
+library(simstudy)
+```
+
+
+### 仮想データの実装
+
+```{r}
+set.seed(123) # seedを設定することで必ず同じデータが毎回できるので再現性の固定
+# まず施設IDの作成
+b <- defData(varname = "institution_id", dist = "noZeroPoisson", formula = 3)
+c <- genData(450, b)
+
+# 各変数の作成
+a <- data.frame(rnorm(450,59,8),rbinom(450,1,prob=0.6),rnorm(450,72,5),rnorm(450,28,5),rbinom(450,1,0.94)
+               ,rbinom(450,1,0.30),rbinom(450,1,0.5),rbinom(450,1,0.34))
+
+colnames(a) <- c('Age','Sex','MAP','APACHEⅡ','Mechanical_ventilation','Bacteremia','PMX','twentyeight_day_mortality')
+# 列の名前を付ける 
+# sex 1=male, Mechanical_ventilation yes=1, Bacteremia yes=1, PMX yes=1, 28day_mortality yes=1 
+```
+
+
+両者を結合する。
+
+```{r}
+pmx <- cbind.data.frame(c,a)
+
+pmx <- as.data.frame(pmx)
+```
+
+
+### 作成したデータの確認
+
+```{r}
+summary(pmx)
+```
+
+
+```{r}
+str(pmx)
+```
+
+おおむね狙い通りのデータになっていることが分かる。
+
+今回は施設というクラスターは無視して傾向スコアを用いて解析を実装する。
+
+### 傾向スコアの作成
+
+実際の論文ではRCTのため傾向スコアや多変量解析は行われていない。
+
+今回は観察研究という設定で計算する。
+
+PMXを行うか否かについて関係する共変量を設定する。
+
+まず共変量をオブジェクトに格納する。
+
+こうすることの利点はモデルを作る際に見やすくなることである。
+
+```{r}
+covariateNames <- c(
+  "Age",
+  "Sex",
+  "MAP",
+  "APACHEⅡ",
+  "Mechanical_ventilation"
+)
+```
+
+#### 治療指標の作成
+
+便利のために、pmxとは別に治療指標の変数を作成する。治療指標は因子型としておく。
+
+```{r}
+pmx$treat <- as.factor(pmx$PMX)
+```
+
+
+####　連続予測子の標準化
+
+```{r}
+#標準化された連続予測子
+for (var in covariateNames) {
+  if (class(pmx[,var])!="factor") { pmx[,var] = (pmx[,var]-mean(pmx[,var]))/sd(pmx[,var]) }
+  }
+```
+
+
+#### 傾向スコアの推定
+
+```{r}
+#ロジスティック回帰モデルの式の作成準備
+ps.formula <- paste(covariateNames, collapse="+") 
+ps.formula <- formula(paste("treat~",ps.formula))
+print(ps.formula)
+```
+
+
+```{r}
+#クラスタリングを無視した傾向スコアの推定
+#ps.model <- glm(ps.formula, data = pmx, family=binomial)
+
+ps.model <- pmx %>% glm(ps.formula, data = ., family=binomial(link = "logit"))
+
+#クラスタリングを無視した傾向スコアを得る
+pmx$ps <- fitted(ps.model)
+```
+
+
+#### 傾向スコアの評価
+
+```{r message=FALSE}
+library(pROC)
+
+ROC <- pmx %>% roc(treat ~ ps, data = ., ci = TRUE)
+ROC
+```
+
+今回はAUC 0.5255と低い値であり、モデルの精度として良くないようである。
+
+
+#### Common supportの評価
+
+傾向スコアにばらつきがないかを評価する
+
+```{r}
+hist(pmx$ps[pmx$treat==0], density = 10, angle = 45, main="Propensity Scores",
+     breaks=seq(0,1,by=0.01),
+     xlim=c(0,1), ylim=c(0,50), xlab="Shaded = Untreated | Gray = PMX")
+hist(pmx$ps[pmx$treat==1], col=gray(0.4,0.25), breaks=seq(0,1,by=0.01),
+     xlim=c(0,1), ylim=c(0,50),add=T) 
+
+```
+
+PMX群とコントロール群では傾向スコアの分布は同じくらいであることが分かる。
+
+### ATEの推定
+
+今回は、試験の対象集団全体におけるPMXの効果を知りたいのであるからAverage treatment effect(ATE)を
+推定することとする。
+
+```{r}
+# 重みの計算
+pmx$psw <- with(pmx, ifelse(treat==1, 1/ps, 1/(1-ps)))
+
+summary(pmx$psw)
+```
+
+今回は傾向スコアに極端なweightはないが、もしある場合は対処を考える必要がある。
+
+方法として、
+
+1. 極端なweightがモデルの仕様の誤りによるものかどうかをチェックするために、傾向スコアモデルを再指定する
+
+2. 傾向スコア法を変更する
+
+3. weight打切りを行う
+
+4. 安定化weightを使用する。
+
+3については99%タイルでweightを切り捨てるという方法がある。
+
+4についてはweightを加重平均などで安定化する方法である。
+
+今回は不要だが、参考までにweightの安定化を行う。
+
+```{r}
+#重みの正規化
+pmx$psw <- pmx$psw/mean(pmx$psw)
+# 統合
+with(pmx, by(psw, PMX, summary))
+```
+
+安定化する前と比べてもほとんど変化はないことが分かる。
+
+今回は仮想データであるため、元々傾向スコアの分布が比較的均一であったため、安定化や切り捨ては不要で<br>
+ある。
+
+実際のデータでは極端なweightを取ることがあるため、対処が必要になることがある。
+
+### 両群のバランス評価
+
+介入群とコントロール群でバランスがとれているか確認が必要である。
+
+そのためにtwangパッケージを用いる。
+
+```{r message=FALSE}
+require(twang)
+
+baseline.balance <- bal.stat(data=pmx,#データセット
+                          var=covariateNames,#バランスチェックの確認に含む変数のリスト
+                          treat.var="treat",#介入・曝露の変数
+                          w.all=1,#傾向スコアのweightなどがある場合、デフォルトは1 (no weighting)
+                          sampw=1,#サンプリングウェイト (no weighting)
+                          get.means=T, #平均と分散を計算するかどうか
+                          get.ks=F,#コルモゴロフ・スミルノフ統計量を計算するかどうか
+                          estimand="ATE",#ATEとATTどちらか
+                          multinom=F)#多項傾向スコアを用いるかどうか
+
+baseline.balance.es <- baseline.balance$results
+
+summary(abs(baseline.balance.es$std.eff.sz))
+```
+
+
+標準化効果量は最大で0.070447とバランスはとれているようである。
+
+続いて傾向スコアで重みづけした後のバランス評価を行う。
+
+```{r}
+psw.balance <- bal.stat(data=pmx,#データセット
+                          var=covariateNames,#バランスチェックの確認に含む変数のリスト
+                          treat.var="treat",#介入・曝露の変数
+                          w.all=pmx$psw,#傾向スコアのweightなどがある場合
+                          sampw=1,#サンプリングウェイト (no weighting)
+                          get.means=T, #平均と分散を計算するかどうか
+                          get.ks=F,#コルモゴロフ・スミルノフ統計量を計算するかどうか
+                          estimand="ATE",#ATEとATTどちらか
+                          multinom=F)#多項傾向スコアを用いるかどうか
+
+
+psw.balance.table <- psw.balance$results
+
+summary(abs(psw.balance.table$std.eff.sz))
+```
+
+標準効果量はかなり小さく、今回のデータでは重みづけする前後でもバランスはとれていた。
+
+### 治療効果の評価
+
+今回はデータ作成の都合上、簡単のために生存までの時間は無視してロジスティック回帰モデルで評価する。
+
+そのために変数を論理型に変更しておく。
+
+```{r}
+pmx$twentyeight_day_mortality <- as.logical(pmx$twentyeight_day_mortality)
+pmx$PMX <- as.logical(pmx$PMX)
+
+str(pmx$twentyeight_day_mortality)
+```
+
+論理型に変換できたことを確認
+
+```{r}
+final.model <- pmx %>%
+  glm(twentyeight_day_mortality ~ PMX, family = binomial(link = "logit"), weights = psw, data = .)
+```
+
+ここでの警告はstack.flowを見る限り問題はなさそう。
+
+https://stackoverflow.com/questions/12953045/warning-non-integer-successes-in-a-binomial-glm-survey-packages
+
+二重にロバストな推定
+
+```{r message=FALSE}
+library(lmtest)
+library(sandwich)
+result <- coeftest(final.model, vcov = sandwich)
+```
+
+
+```{r}
+summary(result)
+```
+
+
+```{r}
+exp(result[2])
+exp(-1.96*result[4])
+exp(1.96*result[4])
+```
+
+PMXのオッズ比は1.15 (95%CI 0.68 - 1.48)であった。
+
+RRに変換すると、1.068となる。
+
+https://clincalc.com/Stats/ConvertOR.aspx#1
+
+これは元論文の1.09と近いが、そもそも介入と非介入の割合が50%なので、リスク比に変換するのは正しくないであろう。
+
+#### 【参考文献】
+
+Practical Propensity Score Methods Using R  SAGE Publications, Inc
+
+

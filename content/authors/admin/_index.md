@@ -15,6 +15,8 @@ education:
 #    year: 2008
 email: ""
 interests:
+- Internal medicine
+- Gastroenterology
 - Epidemiology
 - Data analysis
 #- Information Retrieval
