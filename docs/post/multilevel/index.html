@@ -27,10 +27,10 @@
   
     
   
-  <meta name="description" content="Rによる傾向スコアの実装について簡単に">
+  <meta name="description" content="Rによるマルチレベル分析について簡単に">
 
   
-  <link rel="alternate" hreflang="en-us" href="../../post/propensity_score/">
+  <link rel="alternate" hreflang="en-us" href="../../post/multilevel/">
 
   
 
@@ -224,7 +224,7 @@
   <link rel="icon" type="image/png" href="../../images/icon_hu0b7a4cb9992c9ac0e91bd28ffd38dd00_9727_32x32_fill_lanczos_center_2.png">
   <link rel="apple-touch-icon" type="image/png" href="../../images/icon_hu0b7a4cb9992c9ac0e91bd28ffd38dd00_9727_192x192_fill_lanczos_center_2.png">
 
-  <link rel="canonical" href="../../post/propensity_score/">
+  <link rel="canonical" href="../../post/multilevel/">
 
   
   
@@ -240,15 +240,15 @@
   <meta property="twitter:card" content="summary">
   
   <meta property="og:site_name" content="Kumakt Memorandum">
-  <meta property="og:url" content="/post/propensity_score/">
-  <meta property="og:title" content="Rによる傾向スコアの実装 | Kumakt Memorandum">
-  <meta property="og:description" content="Rによる傾向スコアの実装について簡単に"><meta property="og:image" content="/images/icon_hu0b7a4cb9992c9ac0e91bd28ffd38dd00_9727_512x512_fill_lanczos_center_2.png">
+  <meta property="og:url" content="/post/multilevel/">
+  <meta property="og:title" content="Rによるマルチレベル分析の実装 | Kumakt Memorandum">
+  <meta property="og:description" content="Rによるマルチレベル分析について簡単に"><meta property="og:image" content="/images/icon_hu0b7a4cb9992c9ac0e91bd28ffd38dd00_9727_512x512_fill_lanczos_center_2.png">
   <meta property="twitter:image" content="/images/icon_hu0b7a4cb9992c9ac0e91bd28ffd38dd00_9727_512x512_fill_lanczos_center_2.png"><meta property="og:locale" content="en-us">
   
     
-      <meta property="article:published_time" content="2020-07-22T22:16:38&#43;09:00">
+      <meta property="article:published_time" content="2020-07-25T18:40:12&#43;09:00">
     
-    <meta property="article:modified_time" content="2020-07-22T22:16:38&#43;09:00">
+    <meta property="article:modified_time" content="2020-07-25T18:40:12&#43;09:00">
   
 
   
@@ -272,12 +272,12 @@
   "@type": "BlogPosting",
   "mainEntityOfPage": {
     "@type": "WebPage",
-    "@id": "/post/propensity_score/"
+    "@id": "/post/multilevel/"
   },
-  "headline": "Rによる傾向スコアの実装",
+  "headline": "Rによるマルチレベル分析の実装",
   
-  "datePublished": "2020-07-22T22:16:38+09:00",
-  "dateModified": "2020-07-22T22:16:38+09:00",
+  "datePublished": "2020-07-25T18:40:12+09:00",
+  "dateModified": "2020-07-25T18:40:12+09:00",
   
   "author": {
     "@type": "Person",
@@ -292,7 +292,7 @@
       "url": "/images/icon_hu0b7a4cb9992c9ac0e91bd28ffd38dd00_9727_192x192_fill_lanczos_center_2.png"
     }
   },
-  "description": "Rによる傾向スコアの実装について簡単に"
+  "description": "Rによるマルチレベル分析について簡単に"
 }
 </script>
 
@@ -310,7 +310,7 @@
 
 
 
-  <title>Rによる傾向スコアの実装 | Kumakt Memorandum</title>
+  <title>Rによるマルチレベル分析の実装 | Kumakt Memorandum</title>
 
 </head>
 <body id="top" data-spy="scroll" data-offset="70" data-target="#TableOfContents" >
@@ -506,8 +506,10 @@
   
   
 <div class="article-container pt-3">
-  <h1>Rによる傾向スコアの実装</h1>
+  <h1>Rによるマルチレベル分析の実装</h1>
 
+  
+  <p class="page-subtitle">全編</p>
   
 
   
@@ -535,7 +537,7 @@
     
       
     
-    Jul 22, 2020
+    Jul 25, 2020
   </span>
   
 
@@ -544,7 +546,7 @@
   
   <span class="middot-divider"></span>
   <span class="article-reading-time">
-    7 min read
+    8 min read
   </span>
   
 
@@ -589,7 +591,8 @@
 
 <div id="サンプルデータを作成する" class="section level3">
 <h3>サンプルデータを作成する</h3>
-<p>適当なパッケージがないため、仮想データを作成する。</p>
+<p>以前の「Rによる傾向スコアの実装」で使用したデータと同じ仮想データを用いる。</p>
+<p>適当なデータがないため、仮想データを作成する。</p>
 <ul>
 <li><p>Effect of Targeted Polymyxin B Hemoperfusion on 28-Day Mortality in Patients With Septic Shock and Elevated Endotoxin Level</p></li>
 <li><p>The EUPHRATES Randomized Clinical Trialより</p></li>
@@ -669,193 +672,234 @@ pmx &lt;- as.data.frame(pmx)</code></pre>
 ##  $ PMX                      : int  0 0 0 1 0 0 0 0 1 1 ...
 ##  $ twentyeight_day_mortality: int  1 0 0 0 0 1 0 0 1 0 ...</code></pre>
 <p>おおむね狙い通りのデータになっていることが分かる。</p>
-<p>今回は施設というクラスターは無視して傾向スコアを用いて解析を実装する。</p>
+<p>今回は２つの解析を行う。</p>
+<ol style="list-style-type: decimal">
+<li><p>マルチレベルロジスティック回帰モデルを実装する。</p></li>
+<li><p>前回と違い施設というクラスターを含めて傾向スコアを用いて解析を実装する。</p></li>
+</ol>
+<p>まずは1のマルチレベルロジスティック回帰について実装する。</p>
+<p>モデルを２つ作成する。</p>
+<ul>
+<li><p>モデル1:クラスター効果を無視した多変量ロジスティック回帰</p></li>
+<li><p>モデル2:クラスター効果を加えたマルチレベルロジスティック回帰</p></li>
+</ul>
 </div>
-<div id="傾向スコアの作成" class="section level3">
-<h3>傾向スコアの作成</h3>
-<p>実際の論文ではRCTのため傾向スコアや多変量解析は行われていない。</p>
-<p>今回は観察研究という設定で計算する。</p>
-<p>PMXを行うか否かについて関係する共変量を設定する。</p>
-<p>まず共変量をオブジェクトに格納する。</p>
-<p>こうすることの利点はモデルを作る際に見やすくなることである。</p>
-<pre class="r"><code>covariateNames &lt;- c(
-  &quot;Age&quot;,
-  &quot;Sex&quot;,
-  &quot;MAP&quot;,
-  &quot;APACHEⅡ&quot;,
-  &quot;Mechanical_ventilation&quot;
-)</code></pre>
-<div id="治療指標の作成" class="section level4">
-<h4>治療指標の作成</h4>
-<p>便利のために、pmxとは別に治療指標の変数を作成する。治療指標は因子型としておく。</p>
-<pre class="r"><code>pmx$treat &lt;- as.factor(pmx$PMX)</code></pre>
-<p>####　連続予測子の標準化</p>
-<pre class="r"><code>#標準化された連続予測子
-for (var in covariateNames) {
-  if (class(pmx[,var])!=&quot;factor&quot;) { pmx[,var] = (pmx[,var]-mean(pmx[,var]))/sd(pmx[,var]) }
-  }</code></pre>
+<div id="モデル1-多変量ロジスティック回帰" class="section level3">
+<h3>モデル1 多変量ロジスティック回帰</h3>
+<p>最初に通常のロジスティック回帰を行う。</p>
+<p>このモデルではクラスター効果を無視してモデルを作る。</p>
+<p>つまり結果には施設間の差は影響しないという仮定である。</p>
+<p>そのため個人レベルでの変数のみが影響するとしてモデルを作成する。</p>
+<p>被検者iの死亡する確率を<span class="math inline">\(p_i\)</span>とすると、(すなわち死亡という場合の条件付き確率)</p>
+<p><span class="math inline">\(logit(p_i) = log odds = log(\frac{p_i}{1-p_i}) = M + e_i\)</span></p>
+<p>と表すことができる。</p>
+<p>ここで、Mはロジスティック尺度で表された集団全体の平均確率、<span class="math inline">\(e_i\)</span>はiの残差である。</p>
+<p>モデル1では各個人レベルの変数が死亡する確率に影響を与えていると考える。</p>
+<p><span class="math inline">\(logit(p_i) = M + \beta_1*PMX_i + \beta_2*Age_i + \beta_3*Sex_i + \beta_4*APACH_i + \beta_5*Ven_i + e_i\)</span></p>
+<p>として表すことができる。</p>
+<div id="共変量の設定" class="section level4">
+<h4>共変量の設定</h4>
+<pre class="r"><code>covariateName_nc &lt;- c(
+  &quot;PMX&quot;,&quot;Age&quot;,&quot;Sex&quot;,&quot;MAP&quot;, &quot;APACHEⅡ&quot;, &quot;Mechanical_ventilation&quot;
+  )</code></pre>
 </div>
-<div id="傾向スコアの推定" class="section level4">
-<h4>傾向スコアの推定</h4>
-<pre class="r"><code>#ロジスティック回帰モデルの式の作成準備
-ps.formula &lt;- paste(covariateNames, collapse=&quot;+&quot;) 
-ps.formula &lt;- formula(paste(&quot;treat~&quot;,ps.formula))
-print(ps.formula)</code></pre>
-<pre><code>## treat ~ Age + Sex + MAP + APACHEⅡ + Mechanical_ventilation</code></pre>
-<pre class="r"><code>#クラスタリングを無視した傾向スコアの推定
-#ps.model &lt;- glm(ps.formula, data = pmx, family=binomial)
-
-ps.model &lt;- pmx %&gt;% glm(ps.formula, data = ., family=binomial(link = &quot;logit&quot;))
-
-#クラスタリングを無視した傾向スコアを得る
-pmx$ps &lt;- fitted(ps.model)</code></pre>
+<div id="式の作成" class="section level4">
+<h4>式の作成</h4>
+<pre class="r"><code>nc.formula &lt;- paste(covariateName_nc, collapse=&quot;+&quot;) 
+nc.formula &lt;- formula(paste(&quot;twentyeight_day_mortality~&quot;,nc.formula))
+print(nc.formula)</code></pre>
+<pre><code>## twentyeight_day_mortality ~ PMX + Age + Sex + MAP + APACHEⅡ + 
+##     Mechanical_ventilation</code></pre>
 </div>
-<div id="傾向スコアの評価" class="section level4">
-<h4>傾向スコアの評価</h4>
-<pre class="r"><code>library(pROC)
-
-ROC &lt;- pmx %&gt;% roc(treat ~ ps, data = ., ci = TRUE)
-ROC</code></pre>
+<div id="ロジスティック回帰" class="section level4">
+<h4>ロジスティック回帰</h4>
+<pre class="r"><code>model_nc &lt;- pmx %&gt;% glm(nc.formula, data = ., family = binomial(link = &quot;logit&quot;))</code></pre>
+</div>
+<div id="結果の確認" class="section level4">
+<h4>結果の確認</h4>
+<pre class="r"><code>summary(model_nc)</code></pre>
 <pre><code>## 
 ## Call:
-## roc.formula(formula = treat ~ ps, data = ., ci = TRUE)
+## glm(formula = nc.formula, family = binomial(link = &quot;logit&quot;), 
+##     data = .)
 ## 
-## Data: ps in 230 controls (treat 0) &lt; 220 cases (treat 1).
-## Area under the curve: 0.5255
-## 95% CI: 0.472-0.579 (DeLong)</code></pre>
-<p>今回はAUC 0.5255と低い値であり、モデルの精度として良くないようである。</p>
+## Deviance Residuals: 
+##     Min       1Q   Median       3Q      Max  
+## -1.4461  -0.9199  -0.8317   1.3800   1.7795  
+## 
+## Coefficients:
+##                         Estimate Std. Error z value Pr(&gt;|z|)  
+## (Intercept)            -0.457777   1.768631  -0.259   0.7958  
+## PMX                     0.145555   0.200801   0.725   0.4685  
+## Age                    -0.013387   0.012768  -1.048   0.2944  
+## Sex                     0.191703   0.205746   0.932   0.3515  
+## MAP                     0.005604   0.020071   0.279   0.7801  
+## APACHEⅡ                 0.029188   0.020369   1.433   0.1519  
+## Mechanical_ventilation -0.873933   0.367343  -2.379   0.0174 *
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## (Dispersion parameter for binomial family taken to be 1)
+## 
+##     Null deviance: 580.82  on 449  degrees of freedom
+## Residual deviance: 570.18  on 443  degrees of freedom
+## AIC: 584.18
+## 
+## Number of Fisher Scoring iterations: 4</code></pre>
+<p>オッズ比へ変換する</p>
+<pre class="r"><code># オッズ比と95%信頼区間の確認
+nc_odds &lt;- as.data.frame(cbind(exp(summary(model_nc)$coefficient[,1]),exp(confint(model_nc))
+                                    ,summary(model_nc)$coefficient[,4]))</code></pre>
+<pre><code>## Waiting for profiling to be done...</code></pre>
+<pre class="r"><code># result_oddsというデータフレームの列名を名付ける
+names(nc_odds) &lt;- c(&quot;Odds ratio&quot;,&quot;lower 95%CI&quot;,&quot;upper 95%CI&quot;,&quot;P value&quot;)
+# 小数点２桁で結果を表示
+round(nc_odds,2)</code></pre>
+<pre><code>##                        Odds ratio lower 95%CI upper 95%CI P value
+## (Intercept)                  0.63        0.02       20.42    0.80
+## PMX                          1.16        0.78        1.72    0.47
+## Age                          0.99        0.96        1.01    0.29
+## Sex                          1.21        0.81        1.82    0.35
+## MAP                          1.01        0.97        1.05    0.78
+## APACHEⅡ                      1.03        0.99        1.07    0.15
+## Mechanical_ventilation       0.42        0.20        0.86    0.02</code></pre>
+<pre class="r"><code>library(pROC)
+
+ROC_nc &lt;- roc(response = pmx$twentyeight_day_mortality, predictor = model_nc$fitted.values)
+ROC_nc</code></pre>
+<pre><code>## 
+## Call:
+## roc.default(response = pmx$twentyeight_day_mortality, predictor = model_nc$fitted.values)
+## 
+## Data: model_nc$fitted.values in 294 controls (pmx$twentyeight_day_mortality 0) &lt; 156 cases (pmx$twentyeight_day_mortality 1).
+## Area under the curve: 0.598</code></pre>
+<p>AUC 0.598でモデルの精度は良くないことが分かる。</p>
+<p>結果としては、PMXはOR 1.16 (95%CI:0.78 - 1.72)で死亡を減らす関係は認めなかった。</p>
+<p>むしろ点推定値と信頼区間を考慮すると若干死亡を高める方向に働いている可能性もある。</p>
+<p>しかしAUCが低いことから、そもそもこのモデルの精度が良くないため共変量などについて再考する必要がありそう。</p>
+<p>＊人工呼吸器の使用で死亡が減る方向になっている結果は、シミュレーションデータなので今回は無視する。</p>
 </div>
-<div id="common-supportの評価" class="section level4">
-<h4>Common supportの評価</h4>
-<p>傾向スコアにばらつきがないかを評価する</p>
-<pre class="r"><code>hist(pmx$ps[pmx$treat==0], density = 10, angle = 45, main=&quot;Propensity Scores&quot;,
-     breaks=seq(0,1,by=0.01),
-     xlim=c(0,1), ylim=c(0,50), xlab=&quot;Shaded = Untreated | Gray = PMX&quot;)
-hist(pmx$ps[pmx$treat==1], col=gray(0.4,0.25), breaks=seq(0,1,by=0.01),
-     xlim=c(0,1), ylim=c(0,50),add=T) </code></pre>
-<p><img src="../../post/Propensity_score_files/figure-html/unnamed-chunk-12-1.png" width="672" /></p>
-<p>PMX群とコントロール群では傾向スコアの分布は同じくらいであることが分かる。</p>
+</div>
+<div id="モデル2マルチレベルロジスティック回帰" class="section level3">
+<h3>モデル2:マルチレベルロジスティック回帰</h3>
+<p>このモデルではクラスター効果を考慮してモデルを作る。</p>
+<p>回帰モデルでは観測値の独立性が前提となっている。</p>
+<p>しかし各施設内では同じような治療がなされ治療成績が似通っている可能性がある。</p>
+<p>逆に言えば施設間でPMXの適応や手技の成熟度、集中治療のレベルなどが違う可能性があり、</p>
+<p>個人レベルでの変数のみではなく施設も影響するとしてモデルを作成する必要がある。</p>
+<p>施設という階層があり、その下に個人レベルの変数があるという形である。</p>
+<p>施設jに所属の個人iの死亡する確率<span class="math inline">\(p_{ij}\)</span>は、</p>
+<ul>
+<li><p>レベル1(個人レベル): <span class="math inline">\(logit(p_{ij}) = M_{0j} + e_{ij}\)</span></p></li>
+<li><p>レベル2(集団レベル): <span class="math inline">\(M_{oj} = \gamma_{00} + u_{0j}\)</span></p></li>
+</ul>
+<p>として表すことができる。</p>
+<p><span class="math inline">\(M_{0j}\)</span>は集団jの死亡する平均確率、<span class="math inline">\(e_{ij}\)</span>は集団jでの個人間の残差を表している。</p>
+<p><span class="math inline">\(\gamma_{00}\)</span>は集団全体の死亡する平均確率、<span class="math inline">\(u_{0j}\)</span>は集団間の変動を表す。</p>
+<p>マルチレベルモデルでは集団によって変動しない値を固定効果(fixed effect)、
+<span class="math inline">\(u_{oj}\)</span>のように変動する値を変量効果(random effedt)と呼ぶ。</p>
+<p>それぞれが従う分布は平均0、個人レベルの分散<span class="math inline">\(V_I\)</span>、集団レベルの分散<span class="math inline">\(V_C\)</span>として、</p>
+<p><span class="math inline">\(e_{ij}\)</span> ~ <span class="math inline">\(N(0,V_I)\)</span></p>
+<p><span class="math inline">\(u_{0j}\)</span> ~ <span class="math inline">\(N(0,V_C)\)</span></p>
+<p>の正規分布に従うことが仮定される。</p>
+<p>最終的にモデル2は、</p>
+<p><span class="math inline">\(logit(p_ij) = \gamma_{00} + u_{0j} + \beta_1*PMX_{ij} + \beta_2*Age_{ij} + \beta_3*Sex_{ij} + \beta_4*APACH_{ij} + \beta_5*Ven_{ij} + e_{ij}\)</span></p>
+<p>として表すことができる。</p>
+<div id="共変量の設定-1" class="section level4">
+<h4>共変量の設定</h4>
+<pre class="r"><code>covariateName_c &lt;- c(
+  &quot;PMX&quot;,&quot;Age&quot;,&quot;Sex&quot;,&quot;MAP&quot;, &quot;APACHEⅡ&quot;, &quot;Mechanical_ventilation&quot;
+  )</code></pre>
+</div>
+<div id="式の作成-1" class="section level4">
+<h4>式の作成</h4>
+<pre class="r"><code>c.formula &lt;- paste(covariateName_c, collapse=&quot;+&quot;) 
+c.formula &lt;- formula(paste(&quot;twentyeight_day_mortality~&quot;,c.formula,&quot;+(1|institution_id)&quot;))
+print(c.formula)</code></pre>
+<pre><code>## twentyeight_day_mortality ~ PMX + Age + Sex + MAP + APACHEⅡ + 
+##     Mechanical_ventilation + (1 | institution_id)</code></pre>
+</div>
+<div id="マルチレベルロジスティック回帰" class="section level4">
+<h4>マルチレベルロジスティック回帰</h4>
+<pre class="r"><code>library(lme4)
+model_c &lt;- pmx %&gt;% glmer(c.formula, data = ., family = binomial(link = &quot;logit&quot;), control = glmerControl(optimizer = &quot;bobyqa&quot;),
+    nAGQ = 10)</code></pre>
+</div>
+<div id="結果の確認-1" class="section level4">
+<h4>結果の確認</h4>
+<pre class="r"><code>print(model_c, corr = FALSE)</code></pre>
+<pre><code>## Generalized linear mixed model fit by maximum likelihood (Adaptive
+##   Gauss-Hermite Quadrature, nAGQ = 10) [glmerMod]
+##  Family: binomial  ( logit )
+## Formula: twentyeight_day_mortality ~ PMX + Age + Sex + MAP + APACHEⅡ +  
+##     Mechanical_ventilation + (1 | institution_id)
+##    Data: .
+##       AIC       BIC    logLik  deviance  df.resid 
+##  586.1784  619.0524 -285.0892  570.1784       442 
+## Random effects:
+##  Groups         Name        Std.Dev.
+##  institution_id (Intercept) 0       
+## Number of obs: 450, groups:  institution_id, 10
+## Fixed Effects:
+##            (Intercept)                     PMX                     Age  
+##              -0.457777                0.145555               -0.013387  
+##                    Sex                     MAP                 APACHEⅡ  
+##               0.191703                0.005604                0.029188  
+## Mechanical_ventilation  
+##              -0.873933  
+## convergence code 0; 0 optimizer warnings; 1 lme4 warnings</code></pre>
+<p>95%信頼区間を求める</p>
+<p>通常の方法では出せないので注意</p>
+<pre class="r"><code>se &lt;- sqrt(diag(vcov(model_c)))
+# table of estimates with 95% CI
+(tab &lt;- cbind(Est = fixef(model_c), LL = fixef(model_c) - 1.96 * se, UL = fixef(model_c) + 1.96 *
+    se))</code></pre>
+<pre><code>##                                 Est          LL          UL
+## (Intercept)            -0.457777126 -3.92314409  3.00758984
+## PMX                     0.145554945 -0.24801464  0.53912453
+## Age                    -0.013386704 -0.03840952  0.01163611
+## Sex                     0.191702790 -0.21155879  0.59496437
+## MAP                     0.005604172 -0.03371708  0.04492542
+## APACHEⅡ                 0.029187831 -0.01073457  0.06911023
+## Mechanical_ventilation -0.873933310 -1.59392402 -0.15394260</code></pre>
+<p>オッズ比を求める</p>
+<pre class="r"><code>round(exp(tab),2)</code></pre>
+<pre><code>##                         Est   LL    UL
+## (Intercept)            0.63 0.02 20.24
+## PMX                    1.16 0.78  1.71
+## Age                    0.99 0.96  1.01
+## Sex                    1.21 0.81  1.81
+## MAP                    1.01 0.97  1.05
+## APACHEⅡ                1.03 0.99  1.07
+## Mechanical_ventilation 0.42 0.20  0.86</code></pre>
+<p>今回の結果は、ランダム効果の分散は0であり、目的変数には集団による違いはないことになる。</p>
+<p>実際、モデル1とモデル2では結果はほぼ同じである。</p>
+</div>
+<div id="級内相関係数" class="section level4">
+<h4>級内相関係数</h4>
+<p>病院などの集団内でデータがどの程度類似しているかを検討するための指標として、級内相関係数(ICC)がある。</p>
+<p>ICCが大きいほど観測値の独立性の仮定からの逸脱が大きいことを意味する。</p>
+<p>線形回帰モデルと違いロジスティック回帰モデルでは解釈が難しい。</p>
+<p>なぜなら、集団内での分散はロジスティック尺度上にあり、個人レベルの分散は確率であるからである。
+(二項分布の分散Vはp(1-p)である。)</p>
+<p>いくつか計算する方法はあるが今回は分散が0のためICCは計算できない。</p>
+<pre class="r"><code>tau2 &lt;- lme4::VarCorr(model_c)
+tau2</code></pre>
+<pre><code>##  Groups         Name        Std.Dev.
+##  institution_id (Intercept) 0</code></pre>
 </div>
 </div>
-<div id="ateの推定" class="section level3">
-<h3>ATEの推定</h3>
-<p>今回は、試験の対象集団全体におけるPMXの効果を知りたいのであるからAverage treatment effect(ATE)を
-推定することとする。</p>
-<pre class="r"><code># 重みの計算
-pmx$psw &lt;- with(pmx, ifelse(treat==1, 1/ps, 1/(1-ps)))
-
-summary(pmx$psw)</code></pre>
-<pre><code>##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-##   1.745   1.929   1.995   2.000   2.056   2.301</code></pre>
-<p>今回は傾向スコアに極端なweightはないが、もしある場合は対処を考える必要がある。</p>
-<p>方法として、</p>
-<ol style="list-style-type: decimal">
-<li><p>極端なweightがモデルの仕様の誤りによるものかどうかをチェックするために、傾向スコアモデルを再指定する</p></li>
-<li><p>傾向スコア法を変更する</p></li>
-<li><p>weight打切りを行う</p></li>
-<li><p>安定化weightを使用する。</p></li>
-</ol>
-<p>3については99%タイルでweightを切り捨てるという方法がある。</p>
-<p>4についてはweightを加重平均などで安定化する方法である。</p>
-<p>今回は不要だが、参考までにweightの安定化を行う。</p>
-<pre class="r"><code>#重みの正規化
-pmx$psw &lt;- pmx$psw/mean(pmx$psw)
-# 統合
-with(pmx, by(psw, PMX, summary))</code></pre>
-<pre><code>## PMX: 0
-##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-##  0.8724  0.9464  0.9803  0.9782  1.0087  1.1163 
-## ------------------------------------------------------------ 
-## PMX: 1
-##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-##  0.9079  0.9842  1.0158  1.0228  1.0559  1.1506</code></pre>
-<p>安定化する前と比べてもほとんど変化はないことが分かる。</p>
-<p>今回は仮想データであるため、元々傾向スコアの分布が比較的均一であったため、安定化や切り捨ては不要で<br>
-ある。</p>
-<p>実際のデータでは極端なweightを取ることがあるため、対処が必要になることがある。</p>
-</div>
-<div id="両群のバランス評価" class="section level3">
-<h3>両群のバランス評価</h3>
-<p>介入群とコントロール群でバランスがとれているか確認が必要である。</p>
-<p>そのためにtwangパッケージを用いる。</p>
-<pre class="r"><code>require(twang)
-
-baseline.balance &lt;- bal.stat(data=pmx,#データセット
-                          var=covariateNames,#バランスチェックの確認に含む変数のリスト
-                          treat.var=&quot;treat&quot;,#介入・曝露の変数
-                          w.all=1,#傾向スコアのweightなどがある場合、デフォルトは1 (no weighting)
-                          sampw=1,#サンプリングウェイト (no weighting)
-                          get.means=T, #平均と分散を計算するかどうか
-                          get.ks=F,#コルモゴロフ・スミルノフ統計量を計算するかどうか
-                          estimand=&quot;ATE&quot;,#ATEとATTどちらか
-                          multinom=F)#多項傾向スコアを用いるかどうか
-
-baseline.balance.es &lt;- baseline.balance$results
-
-summary(abs(baseline.balance.es$std.eff.sz))</code></pre>
-<pre><code>##     Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
-## 0.008427 0.022860 0.029534 0.035160 0.044532 0.070447</code></pre>
-<p>標準化効果量は最大で0.070447とバランスはとれているようである。</p>
-<p>続いて傾向スコアで重みづけした後のバランス評価を行う。</p>
-<pre class="r"><code>psw.balance &lt;- bal.stat(data=pmx,#データセット
-                          var=covariateNames,#バランスチェックの確認に含む変数のリスト
-                          treat.var=&quot;treat&quot;,#介入・曝露の変数
-                          w.all=pmx$psw,#傾向スコアのweightなどがある場合
-                          sampw=1,#サンプリングウェイト (no weighting)
-                          get.means=T, #平均と分散を計算するかどうか
-                          get.ks=F,#コルモゴロフ・スミルノフ統計量を計算するかどうか
-                          estimand=&quot;ATE&quot;,#ATEとATTどちらか
-                          multinom=F)#多項傾向スコアを用いるかどうか
-
-
-psw.balance.table &lt;- psw.balance$results
-
-summary(abs(psw.balance.table$std.eff.sz))</code></pre>
-<pre><code>##      Min.   1st Qu.    Median      Mean   3rd Qu.      Max. 
-## 5.949e-05 9.701e-05 1.924e-04 2.899e-04 5.454e-04 5.550e-04</code></pre>
-<p>標準効果量はかなり小さく、今回のデータでは重みづけする前後でもバランスはとれていた。</p>
-</div>
-<div id="治療効果の評価" class="section level3">
-<h3>治療効果の評価</h3>
-<p>今回はデータ作成の都合上、簡単のために生存までの時間は無視してロジスティック回帰モデルで評価する。</p>
-<p>そのために変数を論理型に変更しておく。</p>
-<pre class="r"><code>pmx$twentyeight_day_mortality &lt;- as.logical(pmx$twentyeight_day_mortality)
-pmx$PMX &lt;- as.logical(pmx$PMX)
-
-str(pmx$twentyeight_day_mortality)</code></pre>
-<pre><code>##  logi [1:450] TRUE FALSE FALSE FALSE FALSE TRUE ...</code></pre>
-<p>論理型に変換できたことを確認</p>
-<pre class="r"><code>final.model &lt;- pmx %&gt;%
-  glm(twentyeight_day_mortality ~ PMX, family = binomial(link = &quot;logit&quot;), weights = psw, data = .)</code></pre>
-<pre><code>## Warning in eval(family$initialize): non-integer #successes in a binomial glm!</code></pre>
-<p>ここでの警告はstack.flowを見る限り問題はなさそう。</p>
-<p><a href="https://stackoverflow.com/questions/12953045/warning-non-integer-successes-in-a-binomial-glm-survey-packages" class="uri">https://stackoverflow.com/questions/12953045/warning-non-integer-successes-in-a-binomial-glm-survey-packages</a></p>
-<p>二重にロバストな推定</p>
-<pre class="r"><code>library(lmtest)
-library(sandwich)
-result &lt;- coeftest(final.model, vcov = sandwich)</code></pre>
-<pre class="r"><code>summary(result)</code></pre>
-<pre><code>##     Estimate          Std. Error        z value           Pr(&gt;|z|)        
-##  Min.   :-0.69787   Min.   :0.1403   Min.   :-4.9734   Min.   :0.0000007  
-##  1st Qu.:-0.48800   1st Qu.:0.1549   1st Qu.:-3.5517   1st Qu.:0.1188765  
-##  Median :-0.27813   Median :0.1694   Median :-2.1299   Median :0.2377523  
-##  Mean   :-0.27813   Mean   :0.1694   Mean   :-2.1299   Mean   :0.2377523  
-##  3rd Qu.:-0.06826   3rd Qu.:0.1839   3rd Qu.:-0.7082   3rd Qu.:0.3566282  
-##  Max.   : 0.14161   Max.   :0.1985   Max.   : 0.7136   Max.   :0.4755040</code></pre>
-<pre class="r"><code>exp(result[2])</code></pre>
-<pre><code>## [1] 1.152124</code></pre>
-<pre class="r"><code>exp(-1.96*result[4])</code></pre>
-<pre><code>## [1] 0.6777543</code></pre>
-<pre class="r"><code>exp(1.96*result[4])</code></pre>
-<pre><code>## [1] 1.475461</code></pre>
-<p>PMXのオッズ比は1.15 (95%CI 0.68 - 1.48)であった。</p>
-<p>RRに変換すると、1.068となる。</p>
-<p><a href="https://clincalc.com/Stats/ConvertOR.aspx#1" class="uri">https://clincalc.com/Stats/ConvertOR.aspx#1</a></p>
-<p>これは元論文の1.09と近いが、そもそも介入と非介入の割合が50%なので、リスク比に変換するのは正しくないであろう。</p>
-<div id="参考文献" class="section level4">
-<h4>【参考文献】</h4>
-<p>Practical Propensity Score Methods Using R SAGE Publications, Inc</p>
-</div>
+<div id="参考文献" class="section level3">
+<h3>参考文献</h3>
+<p>Peter C Austin, Juan Merlo. Intermediate and advanced topics in multilevel logistic regression analysis.
+Stat Med. 2017. 10;36(20):3257 - 3277.
+<a href="PMID:28543517" class="uri">PMID:28543517</a>.</p>
+<p>Juan Merlo, Basile Chais, et.al. A brief conceptual tutorial of multilevel analysis in social epidemiology: using measures of clustering in multilevel logistic regression to investigate contextual phenomena. J Epidemiol Community Health 2006;60:290–297.
+<a href="PMID:15911637" class="uri">PMID:15911637</a>.</p>
+<p>Three methods for computing the intra-class correlation in multilevel logistic regression
+<a href="https://www.barelysignificant.com/post/icc/" class="uri">https://www.barelysignificant.com/post/icc/</a></p>
+<p>MIXED EFFECTS LOGISTIC REGRESSION | R DATA ANALYSIS EXAMPLES
+<a href="https://stats.idre.ucla.edu/r/dae/mixed-effects-logistic-regression/" class="uri">https://stats.idre.ucla.edu/r/dae/mixed-effects-logistic-regression/</a></p>
 </div>
 
     </div>
@@ -869,7 +913,7 @@ result &lt;- coeftest(final.model, vcov = sandwich)</code></pre>
 
 <div class="article-tags">
   
-  <a class="badge badge-light" href="../../tag/%E5%82%BE%E5%90%91%E3%82%B9%E3%82%B3%E3%82%A2/">傾向スコア</a>
+  <a class="badge badge-light" href="../../tag/%E3%83%9E%E3%83%AB%E3%83%81%E3%83%AC%E3%83%98%E3%83%AB%E5%88%86%E6%9E%90/">マルチレベル分析</a>
   
 </div>
 
@@ -886,7 +930,7 @@ result &lt;- coeftest(final.model, vcov = sandwich)</code></pre>
       
       
       <li>
-        <a href="https://twitter.com/intent/tweet?url=../../post/propensity_score/&amp;text=R%e3%81%ab%e3%82%88%e3%82%8b%e5%82%be%e5%90%91%e3%82%b9%e3%82%b3%e3%82%a2%e3%81%ae%e5%ae%9f%e8%a3%85" target="_blank" rel="noopener" class="share-btn-twitter">
+        <a href="https://twitter.com/intent/tweet?url=../../post/multilevel/&amp;text=R%e3%81%ab%e3%82%88%e3%82%8b%e3%83%9e%e3%83%ab%e3%83%81%e3%83%ac%e3%83%99%e3%83%ab%e5%88%86%e6%9e%90%e3%81%ae%e5%ae%9f%e8%a3%85" target="_blank" rel="noopener" class="share-btn-twitter">
           <i class="fab fa-twitter"></i>
         </a>
       </li>
@@ -899,7 +943,7 @@ result &lt;- coeftest(final.model, vcov = sandwich)</code></pre>
       
       
       <li>
-        <a href="https://www.facebook.com/sharer.php?u=/post/propensity_score/&amp;t=R%e3%81%ab%e3%82%88%e3%82%8b%e5%82%be%e5%90%91%e3%82%b9%e3%82%b3%e3%82%a2%e3%81%ae%e5%ae%9f%e8%a3%85" target="_blank" rel="noopener" class="share-btn-facebook">
+        <a href="https://www.facebook.com/sharer.php?u=/post/multilevel/&amp;t=R%e3%81%ab%e3%82%88%e3%82%8b%e3%83%9e%e3%83%ab%e3%83%81%e3%83%ac%e3%83%99%e3%83%ab%e5%88%86%e6%9e%90%e3%81%ae%e5%ae%9f%e8%a3%85" target="_blank" rel="noopener" class="share-btn-facebook">
           <i class="fab fa-facebook"></i>
         </a>
       </li>
@@ -912,7 +956,7 @@ result &lt;- coeftest(final.model, vcov = sandwich)</code></pre>
       
       
       <li>
-        <a href="mailto:?subject=R%e3%81%ab%e3%82%88%e3%82%8b%e5%82%be%e5%90%91%e3%82%b9%e3%82%b3%e3%82%a2%e3%81%ae%e5%ae%9f%e8%a3%85&amp;body=/post/propensity_score/" target="_blank" rel="noopener" class="share-btn-email">
+        <a href="mailto:?subject=R%e3%81%ab%e3%82%88%e3%82%8b%e3%83%9e%e3%83%ab%e3%83%81%e3%83%ac%e3%83%99%e3%83%ab%e5%88%86%e6%9e%90%e3%81%ae%e5%ae%9f%e8%a3%85&amp;body=/post/multilevel/" target="_blank" rel="noopener" class="share-btn-email">
           <i class="fas fa-envelope"></i>
         </a>
       </li>
@@ -925,7 +969,7 @@ result &lt;- coeftest(final.model, vcov = sandwich)</code></pre>
       
       
       <li>
-        <a href="https://www.linkedin.com/shareArticle?url=../../post/propensity_score/&amp;title=R%e3%81%ab%e3%82%88%e3%82%8b%e5%82%be%e5%90%91%e3%82%b9%e3%82%b3%e3%82%a2%e3%81%ae%e5%ae%9f%e8%a3%85" target="_blank" rel="noopener" class="share-btn-linkedin">
+        <a href="https://www.linkedin.com/shareArticle?url=../../post/multilevel/&amp;title=R%e3%81%ab%e3%82%88%e3%82%8b%e3%83%9e%e3%83%ab%e3%83%81%e3%83%ac%e3%83%99%e3%83%ab%e5%88%86%e6%9e%90%e3%81%ae%e5%ae%9f%e8%a3%85" target="_blank" rel="noopener" class="share-btn-linkedin">
           <i class="fab fa-linkedin-in"></i>
         </a>
       </li>
@@ -938,7 +982,7 @@ result &lt;- coeftest(final.model, vcov = sandwich)</code></pre>
       
       
       <li>
-        <a href="whatsapp://send?text=R%e3%81%ab%e3%82%88%e3%82%8b%e5%82%be%e5%90%91%e3%82%b9%e3%82%b3%e3%82%a2%e3%81%ae%e5%ae%9f%e8%a3%85%20/post/propensity_score/" target="_blank" rel="noopener" class="share-btn-whatsapp">
+        <a href="whatsapp://send?text=R%e3%81%ab%e3%82%88%e3%82%8b%e3%83%9e%e3%83%ab%e3%83%81%e3%83%ac%e3%83%99%e3%83%ab%e5%88%86%e6%9e%90%e3%81%ae%e5%ae%9f%e8%a3%85%20/post/multilevel/" target="_blank" rel="noopener" class="share-btn-whatsapp">
           <i class="fab fa-whatsapp"></i>
         </a>
       </li>
@@ -951,7 +995,7 @@ result &lt;- coeftest(final.model, vcov = sandwich)</code></pre>
       
       
       <li>
-        <a href="https://service.weibo.com/share/share.php?url=../../post/propensity_score/&amp;title=R%e3%81%ab%e3%82%88%e3%82%8b%e5%82%be%e5%90%91%e3%82%b9%e3%82%b3%e3%82%a2%e3%81%ae%e5%ae%9f%e8%a3%85" target="_blank" rel="noopener" class="share-btn-weibo">
+        <a href="https://service.weibo.com/share/share.php?url=../../post/multilevel/&amp;title=R%e3%81%ab%e3%82%88%e3%82%8b%e3%83%9e%e3%83%ab%e3%83%81%e3%83%ac%e3%83%99%e3%83%ab%e5%88%86%e6%9e%90%e3%81%ae%e5%ae%9f%e8%a3%85" target="_blank" rel="noopener" class="share-btn-weibo">
           <i class="fab fa-weibo"></i>
         </a>
       </li>
@@ -1000,7 +1044,7 @@ result &lt;- coeftest(final.model, vcov = sandwich)</code></pre>
     <h3>Related</h3>
     <ul>
       
-      <li><a href="../../post/multilevel/">Rによるマルチレベル分析の実装</a></li>
+      <li><a href="../../post/propensity_score/">Rによる傾向スコアの実装</a></li>
       
       <li><a href="../../post/survival/">Rによる生存時間解析の実装</a></li>
       
