@@ -345,8 +345,10 @@ PMID:15911637.
 
 
 Three methods for computing the intra-class correlation in multilevel logistic regression
+
 https://www.barelysignificant.com/post/icc/
 
 MIXED EFFECTS LOGISTIC REGRESSION | R DATA ANALYSIS EXAMPLES
+
 https://stats.idre.ucla.edu/r/dae/mixed-effects-logistic-regression/
 
