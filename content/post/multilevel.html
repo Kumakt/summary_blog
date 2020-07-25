@@ -1,0 +1,345 @@
+---
+# Documentation: https://sourcethemes.com/academic/docs/managing-content/
+
+title: "Rによるマルチレベル分析の実装"
+subtitle: "全編"
+summary: "Rによるマルチレベル分析について簡単に"
+authors: [Kumakt]
+tags: ["マルチレベル分析"]
+categories: ["R"]
+date: 2020-07-25T18:40:12+09:00
+lastmod: 2020-07-25T18:40:12+09:00
+featured: false
+draft: false
+math: true
+
+# Featured image
+# To use, add an image named `featured.jpg/png` to your page's folder.
+# Focal points: Smart, Center, TopLeft, Top, TopRight, Left, Right, BottomLeft, Bottom, BottomRight.
+image:
+  caption: ""
+  focal_point: ""
+  preview_only: false
+
+# Projects (optional).
+#   Associate this post with one or more of your projects.
+#   Simply enter your project's folder or file name without extension.
+#   E.g. `projects = ["internal-project"]` references `content/project/deep-learning/index.md`.
+#   Otherwise, set `projects = []`.
+projects: []
+---
+
+
+
+<div id="サンプルデータを作成する" class="section level3">
+<h3>サンプルデータを作成する</h3>
+<p>以前の「Rによる傾向スコアの実装」で使用したデータと同じ仮想データを用いる。</p>
+<p>適当なデータがないため、仮想データを作成する。</p>
+<ul>
+<li><p>Effect of Targeted Polymyxin B Hemoperfusion on 28-Day Mortality in Patients With Septic Shock and Elevated Endotoxin Level</p></li>
+<li><p>The EUPHRATES Randomized Clinical Trialより</p></li>
+<li><p>元ネタは敗血症性ショックに対するエンドトキシン吸着療法の多施設共同RCT(60施設)</p></li>
+<li><p>PMX療法(透析)対シャム療法(偽透析：透析している振り)</p></li>
+<li><p>サンプル数:450名のRCT</p></li>
+<li><p>Age, Sex, 平均血圧(Arterial pressure mean:MAP)、重症度スコア(APACHEⅡ)、人工呼吸器の有無(Mechanical<br />
+ventilation)、菌血症の有無(Bacteremia)</p></li>
+<li><p>介入:エンドトキシン吸着療法(PMX)</p></li>
+<li><p>アウトカム:28日後死亡(twentyeight_day_mortality)</p></li>
+<li><p>今回は多施設観察研究と想定し施設数も作成して、10施設とする</p></li>
+</ul>
+<p>JAMA</p>
+<p><a href="https://jamanetwork.com/journals/jama/fullarticle/2706139" class="uri">https://jamanetwork.com/journals/jama/fullarticle/2706139</a></p>
+</div>
+<div id="パッケージの読み込み" class="section level3">
+<h3>パッケージの読み込み</h3>
+<pre class="r"><code>library(dplyr)
+# パイプを使うため
+library(magrittr)
+# シミュレーションデータを作るため
+library(simstudy)</code></pre>
+</div>
+<div id="仮想データの実装" class="section level3">
+<h3>仮想データの実装</h3>
+<pre class="r"><code>set.seed(123) # seedを設定することで必ず同じデータが毎回できるので再現性の固定
+# まず施設IDの作成
+b &lt;- defData(varname = &quot;institution_id&quot;, dist = &quot;noZeroPoisson&quot;, formula = 3)
+c &lt;- genData(450, b)
+
+# 各変数の作成
+a &lt;- data.frame(rnorm(450,59,8),rbinom(450,1,prob=0.6),rnorm(450,72,5),rnorm(450,28,5),rbinom(450,1,0.94)
+               ,rbinom(450,1,0.30),rbinom(450,1,0.5),rbinom(450,1,0.34))
+
+colnames(a) &lt;- c(&#39;Age&#39;,&#39;Sex&#39;,&#39;MAP&#39;,&#39;APACHEⅡ&#39;,&#39;Mechanical_ventilation&#39;,&#39;Bacteremia&#39;,&#39;PMX&#39;,&#39;twentyeight_day_mortality&#39;)
+# 列の名前を付ける 
+# sex 1=male, Mechanical_ventilation yes=1, Bacteremia yes=1, PMX yes=1, 28day_mortality yes=1 </code></pre>
+<p>両者を結合する。</p>
+<pre class="r"><code>pmx &lt;- cbind.data.frame(c,a)
+
+pmx &lt;- as.data.frame(pmx)</code></pre>
+</div>
+<div id="作成したデータの確認" class="section level3">
+<h3>作成したデータの確認</h3>
+<pre class="r"><code>summary(pmx)</code></pre>
+<pre><code>##        id        institution_id        Age             Sex        
+##  Min.   :  1.0   Min.   : 1.000   Min.   :36.52   Min.   :0.0000  
+##  1st Qu.:113.2   1st Qu.: 2.000   1st Qu.:54.19   1st Qu.:0.0000  
+##  Median :225.5   Median : 3.000   Median :59.33   Median :1.0000  
+##  Mean   :225.5   Mean   : 3.142   Mean   :59.11   Mean   :0.5822  
+##  3rd Qu.:337.8   3rd Qu.: 4.000   3rd Qu.:64.59   3rd Qu.:1.0000  
+##  Max.   :450.0   Max.   :10.000   Max.   :79.57   Max.   :1.0000  
+##       MAP           APACHEⅡ      Mechanical_ventilation   Bacteremia    
+##  Min.   :59.25   Min.   :12.76   Min.   :0.0000         Min.   :0.0000  
+##  1st Qu.:68.47   1st Qu.:25.05   1st Qu.:1.0000         1st Qu.:0.0000  
+##  Median :71.81   Median :28.54   Median :1.0000         Median :0.0000  
+##  Mean   :72.00   Mean   :28.30   Mean   :0.9267         Mean   :0.2689  
+##  3rd Qu.:75.03   3rd Qu.:31.90   3rd Qu.:1.0000         3rd Qu.:1.0000  
+##  Max.   :88.95   Max.   :44.45   Max.   :1.0000         Max.   :1.0000  
+##       PMX         twentyeight_day_mortality
+##  Min.   :0.0000   Min.   :0.0000           
+##  1st Qu.:0.0000   1st Qu.:0.0000           
+##  Median :0.0000   Median :0.0000           
+##  Mean   :0.4889   Mean   :0.3467           
+##  3rd Qu.:1.0000   3rd Qu.:1.0000           
+##  Max.   :1.0000   Max.   :1.0000</code></pre>
+<pre class="r"><code>str(pmx)</code></pre>
+<pre><code>## &#39;data.frame&#39;:    450 obs. of  10 variables:
+##  $ id                       : int  1 2 3 4 5 6 7 8 9 10 ...
+##  $ institution_id           : num  2 4 3 5 6 1 3 5 3 3 ...
+##  $ Age                      : num  59.5 53.4 53.3 66.1 50.9 ...
+##  $ Sex                      : int  1 1 1 1 1 1 1 0 1 1 ...
+##  $ MAP                      : num  66.9 68 73.5 80.2 77.4 ...
+##  $ APACHEⅡ                  : num  27.3 20.8 24 32.4 32.5 ...
+##  $ Mechanical_ventilation   : int  1 1 1 1 1 1 1 1 0 1 ...
+##  $ Bacteremia               : int  0 0 0 0 0 1 1 0 0 0 ...
+##  $ PMX                      : int  0 0 0 1 0 0 0 0 1 1 ...
+##  $ twentyeight_day_mortality: int  1 0 0 0 0 1 0 0 1 0 ...</code></pre>
+<p>おおむね狙い通りのデータになっていることが分かる。</p>
+<p>今回は２つの解析を行う。</p>
+<ol style="list-style-type: decimal">
+<li><p>マルチレベルロジスティック回帰モデルを実装する。</p></li>
+<li><p>前回と違い施設というクラスターを含めて傾向スコアを用いて解析を実装する。</p></li>
+</ol>
+<p>まずは1のマルチレベルロジスティック回帰について実装する。</p>
+<p>モデルを２つ作成する。</p>
+<ul>
+<li><p>モデル1:クラスター効果を無視した多変量ロジスティック回帰</p></li>
+<li><p>モデル2:クラスター効果を加えたマルチレベルロジスティック回帰</p></li>
+</ul>
+</div>
+<div id="モデル1-多変量ロジスティック回帰" class="section level3">
+<h3>モデル1 多変量ロジスティック回帰</h3>
+<p>最初に通常のロジスティック回帰を行う。</p>
+<p>このモデルではクラスター効果を無視してモデルを作る。</p>
+<p>つまり結果には施設間の差は影響しないという仮定である。</p>
+<p>そのため個人レベルでの変数のみが影響するとしてモデルを作成する。</p>
+<p>被検者iの死亡する確率を<span class="math inline">\(p_i\)</span>とすると、(すなわち死亡という場合の条件付き確率)</p>
+<p><span class="math inline">\(logit(p_i) = log odds = log(\frac{p_i}{1-p_i}) = M + e_i\)</span></p>
+<p>と表すことができる。</p>
+<p>ここで、Mはロジスティック尺度で表された集団全体の平均確率、<span class="math inline">\(e_i\)</span>はiの残差である。</p>
+<p>モデル1では各個人レベルの変数が死亡する確率に影響を与えていると考える。</p>
+<p><span class="math inline">\(logit(p_i) = M + \beta_1*PMX_i + \beta_2*Age_i + \beta_3*Sex_i + \beta_4*APACH_i + \beta_5*Ven_i + e_i\)</span></p>
+<p>として表すことができる。</p>
+<div id="共変量の設定" class="section level4">
+<h4>共変量の設定</h4>
+<pre class="r"><code>covariateName_nc &lt;- c(
+  &quot;PMX&quot;,&quot;Age&quot;,&quot;Sex&quot;,&quot;MAP&quot;, &quot;APACHEⅡ&quot;, &quot;Mechanical_ventilation&quot;
+  )</code></pre>
+</div>
+<div id="式の作成" class="section level4">
+<h4>式の作成</h4>
+<pre class="r"><code>nc.formula &lt;- paste(covariateName_nc, collapse=&quot;+&quot;) 
+nc.formula &lt;- formula(paste(&quot;twentyeight_day_mortality~&quot;,nc.formula))
+print(nc.formula)</code></pre>
+<pre><code>## twentyeight_day_mortality ~ PMX + Age + Sex + MAP + APACHEⅡ + 
+##     Mechanical_ventilation</code></pre>
+</div>
+<div id="ロジスティック回帰" class="section level4">
+<h4>ロジスティック回帰</h4>
+<pre class="r"><code>model_nc &lt;- pmx %&gt;% glm(nc.formula, data = ., family = binomial(link = &quot;logit&quot;))</code></pre>
+</div>
+<div id="結果の確認" class="section level4">
+<h4>結果の確認</h4>
+<pre class="r"><code>summary(model_nc)</code></pre>
+<pre><code>## 
+## Call:
+## glm(formula = nc.formula, family = binomial(link = &quot;logit&quot;), 
+##     data = .)
+## 
+## Deviance Residuals: 
+##     Min       1Q   Median       3Q      Max  
+## -1.4461  -0.9199  -0.8317   1.3800   1.7795  
+## 
+## Coefficients:
+##                         Estimate Std. Error z value Pr(&gt;|z|)  
+## (Intercept)            -0.457777   1.768631  -0.259   0.7958  
+## PMX                     0.145555   0.200801   0.725   0.4685  
+## Age                    -0.013387   0.012768  -1.048   0.2944  
+## Sex                     0.191703   0.205746   0.932   0.3515  
+## MAP                     0.005604   0.020071   0.279   0.7801  
+## APACHEⅡ                 0.029188   0.020369   1.433   0.1519  
+## Mechanical_ventilation -0.873933   0.367343  -2.379   0.0174 *
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## (Dispersion parameter for binomial family taken to be 1)
+## 
+##     Null deviance: 580.82  on 449  degrees of freedom
+## Residual deviance: 570.18  on 443  degrees of freedom
+## AIC: 584.18
+## 
+## Number of Fisher Scoring iterations: 4</code></pre>
+<p>オッズ比へ変換する</p>
+<pre class="r"><code># オッズ比と95%信頼区間の確認
+nc_odds &lt;- as.data.frame(cbind(exp(summary(model_nc)$coefficient[,1]),exp(confint(model_nc))
+                                    ,summary(model_nc)$coefficient[,4]))</code></pre>
+<pre><code>## Waiting for profiling to be done...</code></pre>
+<pre class="r"><code># result_oddsというデータフレームの列名を名付ける
+names(nc_odds) &lt;- c(&quot;Odds ratio&quot;,&quot;lower 95%CI&quot;,&quot;upper 95%CI&quot;,&quot;P value&quot;)
+# 小数点２桁で結果を表示
+round(nc_odds,2)</code></pre>
+<pre><code>##                        Odds ratio lower 95%CI upper 95%CI P value
+## (Intercept)                  0.63        0.02       20.42    0.80
+## PMX                          1.16        0.78        1.72    0.47
+## Age                          0.99        0.96        1.01    0.29
+## Sex                          1.21        0.81        1.82    0.35
+## MAP                          1.01        0.97        1.05    0.78
+## APACHEⅡ                      1.03        0.99        1.07    0.15
+## Mechanical_ventilation       0.42        0.20        0.86    0.02</code></pre>
+<pre class="r"><code>library(pROC)
+
+ROC_nc &lt;- roc(response = pmx$twentyeight_day_mortality, predictor = model_nc$fitted.values)
+ROC_nc</code></pre>
+<pre><code>## 
+## Call:
+## roc.default(response = pmx$twentyeight_day_mortality, predictor = model_nc$fitted.values)
+## 
+## Data: model_nc$fitted.values in 294 controls (pmx$twentyeight_day_mortality 0) &lt; 156 cases (pmx$twentyeight_day_mortality 1).
+## Area under the curve: 0.598</code></pre>
+<p>AUC 0.598でモデルの精度は良くないことが分かる。</p>
+<p>結果としては、PMXはOR 1.16 (95%CI:0.78 - 1.72)で死亡を減らす関係は認めなかった。</p>
+<p>むしろ点推定値と信頼区間を考慮すると若干死亡を高める方向に働いている可能性もある。</p>
+<p>しかしAUCが低いことから、そもそもこのモデルの精度が良くないため共変量などについて再考する必要がありそう。</p>
+<p>＊人工呼吸器の使用で死亡が減る方向になっている結果は、シミュレーションデータなので今回は無視する。</p>
+</div>
+</div>
+<div id="モデル2マルチレベルロジスティック回帰" class="section level3">
+<h3>モデル2:マルチレベルロジスティック回帰</h3>
+<p>このモデルではクラスター効果を考慮してモデルを作る。</p>
+<p>回帰モデルでは観測値の独立性が前提となっている。</p>
+<p>しかし各施設内では同じような治療がなされ治療成績が似通っている可能性がある。</p>
+<p>逆に言えば施設間でPMXの適応や手技の成熟度、集中治療のレベルなどが違う可能性があり、</p>
+<p>個人レベルでの変数のみではなく施設も影響するとしてモデルを作成する必要がある。</p>
+<p>施設という階層があり、その下に個人レベルの変数があるという形である。</p>
+<p>施設jに所属の個人iの死亡する確率<span class="math inline">\(p_{ij}\)</span>は、</p>
+<ul>
+<li><p>レベル1(個人レベル): <span class="math inline">\(logit(p_{ij}) = M_{0j} + e_{ij}\)</span></p></li>
+<li><p>レベル2(集団レベル): <span class="math inline">\(M_{oj} = \gamma_{00} + u_{0j}\)</span></p></li>
+</ul>
+<p>として表すことができる。</p>
+<p><span class="math inline">\(M_{0j}\)</span>は集団jの死亡する平均確率、<span class="math inline">\(e_{ij}\)</span>は集団jでの個人間の残差を表している。</p>
+<p><span class="math inline">\(\gamma_{00}\)</span>は集団全体の死亡する平均確率、<span class="math inline">\(u_{0j}\)</span>は集団間の変動を表す。</p>
+<p>マルチレベルモデルでは集団によって変動しない値を固定効果(fixed effect)、
+<span class="math inline">\(u_{oj}\)</span>のように変動する値を変量効果(random effedt)と呼ぶ。</p>
+<p>それぞれが従う分布は平均0、個人レベルの分散<span class="math inline">\(V_I\)</span>、集団レベルの分散<span class="math inline">\(V_C\)</span>として、</p>
+<p><span class="math inline">\(e_{ij}\)</span> ~ <span class="math inline">\(N(0,V_I)\)</span></p>
+<p><span class="math inline">\(u_{0j}\)</span> ~ <span class="math inline">\(N(0,V_C)\)</span></p>
+<p>の正規分布に従うことが仮定される。</p>
+<p>最終的にモデル2は、</p>
+<p><span class="math inline">\(logit(p_ij) = \gamma_{00} + u_{0j} + \beta_1*PMX_{ij} + \beta_2*Age_{ij} + \beta_3*Sex_{ij} + \beta_4*APACH_{ij} + \beta_5*Ven_{ij} + e_{ij}\)</span></p>
+<p>として表すことができる。</p>
+<div id="共変量の設定-1" class="section level4">
+<h4>共変量の設定</h4>
+<pre class="r"><code>covariateName_c &lt;- c(
+  &quot;PMX&quot;,&quot;Age&quot;,&quot;Sex&quot;,&quot;MAP&quot;, &quot;APACHEⅡ&quot;, &quot;Mechanical_ventilation&quot;
+  )</code></pre>
+</div>
+<div id="式の作成-1" class="section level4">
+<h4>式の作成</h4>
+<pre class="r"><code>c.formula &lt;- paste(covariateName_c, collapse=&quot;+&quot;) 
+c.formula &lt;- formula(paste(&quot;twentyeight_day_mortality~&quot;,c.formula,&quot;+(1|institution_id)&quot;))
+print(c.formula)</code></pre>
+<pre><code>## twentyeight_day_mortality ~ PMX + Age + Sex + MAP + APACHEⅡ + 
+##     Mechanical_ventilation + (1 | institution_id)</code></pre>
+</div>
+<div id="マルチレベルロジスティック回帰" class="section level4">
+<h4>マルチレベルロジスティック回帰</h4>
+<pre class="r"><code>library(lme4)
+model_c &lt;- pmx %&gt;% glmer(c.formula, data = ., family = binomial(link = &quot;logit&quot;), control = glmerControl(optimizer = &quot;bobyqa&quot;),
+    nAGQ = 10)</code></pre>
+</div>
+<div id="結果の確認-1" class="section level4">
+<h4>結果の確認</h4>
+<pre class="r"><code>print(model_c, corr = FALSE)</code></pre>
+<pre><code>## Generalized linear mixed model fit by maximum likelihood (Adaptive
+##   Gauss-Hermite Quadrature, nAGQ = 10) [glmerMod]
+##  Family: binomial  ( logit )
+## Formula: twentyeight_day_mortality ~ PMX + Age + Sex + MAP + APACHEⅡ +  
+##     Mechanical_ventilation + (1 | institution_id)
+##    Data: .
+##       AIC       BIC    logLik  deviance  df.resid 
+##  586.1784  619.0524 -285.0892  570.1784       442 
+## Random effects:
+##  Groups         Name        Std.Dev.
+##  institution_id (Intercept) 0       
+## Number of obs: 450, groups:  institution_id, 10
+## Fixed Effects:
+##            (Intercept)                     PMX                     Age  
+##              -0.457777                0.145555               -0.013387  
+##                    Sex                     MAP                 APACHEⅡ  
+##               0.191703                0.005604                0.029188  
+## Mechanical_ventilation  
+##              -0.873933  
+## convergence code 0; 0 optimizer warnings; 1 lme4 warnings</code></pre>
+<p>95%信頼区間を求める</p>
+<p>通常の方法では出せないので注意</p>
+<pre class="r"><code>se &lt;- sqrt(diag(vcov(model_c)))
+# table of estimates with 95% CI
+(tab &lt;- cbind(Est = fixef(model_c), LL = fixef(model_c) - 1.96 * se, UL = fixef(model_c) + 1.96 *
+    se))</code></pre>
+<pre><code>##                                 Est          LL          UL
+## (Intercept)            -0.457777126 -3.92314409  3.00758984
+## PMX                     0.145554945 -0.24801464  0.53912453
+## Age                    -0.013386704 -0.03840952  0.01163611
+## Sex                     0.191702790 -0.21155879  0.59496437
+## MAP                     0.005604172 -0.03371708  0.04492542
+## APACHEⅡ                 0.029187831 -0.01073457  0.06911023
+## Mechanical_ventilation -0.873933310 -1.59392402 -0.15394260</code></pre>
+<p>オッズ比を求める</p>
+<pre class="r"><code>round(exp(tab),2)</code></pre>
+<pre><code>##                         Est   LL    UL
+## (Intercept)            0.63 0.02 20.24
+## PMX                    1.16 0.78  1.71
+## Age                    0.99 0.96  1.01
+## Sex                    1.21 0.81  1.81
+## MAP                    1.01 0.97  1.05
+## APACHEⅡ                1.03 0.99  1.07
+## Mechanical_ventilation 0.42 0.20  0.86</code></pre>
+<p>今回の結果は、ランダム効果の分散は0であり、目的変数には集団による違いはないことになる。</p>
+<p>実際、モデル1とモデル2では結果はほぼ同じである。</p>
+</div>
+<div id="級内相関係数" class="section level4">
+<h4>級内相関係数</h4>
+<p>病院などの集団内でデータがどの程度類似しているかを検討するための指標として、級内相関係数(ICC)がある。</p>
+<p>ICCが大きいほど観測値の独立性の仮定からの逸脱が大きいことを意味する。</p>
+<p>線形回帰モデルと違いロジスティック回帰モデルでは解釈が難しい。</p>
+<p>なぜなら、集団内での分散はロジスティック尺度上にあり、個人レベルの分散は確率であるからである。
+(二項分布の分散Vはp(1-p)である。)</p>
+<p>いくつか計算する方法はあるが今回は分散が0のためICCは計算できない。</p>
+<pre class="r"><code>tau2 &lt;- lme4::VarCorr(model_c)
+tau2</code></pre>
+<pre><code>##  Groups         Name        Std.Dev.
+##  institution_id (Intercept) 0</code></pre>
+</div>
+</div>
+<div id="参考文献" class="section level3">
+<h3>参考文献</h3>
+<p>Peter C Austin, Juan Merlo. Intermediate and advanced topics in multilevel logistic regression analysis.
+Stat Med. 2017. 10;36(20):3257 - 3277.
+<a href="PMID:28543517" class="uri">PMID:28543517</a>.</p>
+<p>Juan Merlo, Basile Chais, et.al. A brief conceptual tutorial of multilevel analysis in social epidemiology: using measures of clustering in multilevel logistic regression to investigate contextual phenomena. J Epidemiol Community Health 2006;60:290–297.
+<a href="PMID:15911637" class="uri">PMID:15911637</a>.</p>
+<p>Three methods for computing the intra-class correlation in multilevel logistic regression
+<a href="https://www.barelysignificant.com/post/icc/" class="uri">https://www.barelysignificant.com/post/icc/</a></p>
+<p>MIXED EFFECTS LOGISTIC REGRESSION | R DATA ANALYSIS EXAMPLES
+<a href="https://stats.idre.ucla.edu/r/dae/mixed-effects-logistic-regression/" class="uri">https://stats.idre.ucla.edu/r/dae/mixed-effects-logistic-regression/</a></p>
+</div>

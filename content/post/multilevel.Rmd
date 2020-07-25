@@ -1,0 +1,352 @@
+---
+# Documentation: https://sourcethemes.com/academic/docs/managing-content/
+
+title: "Rによるマルチレベル分析の実装"
+subtitle: "全編"
+summary: "Rによるマルチレベル分析について簡単に"
+authors: [Kumakt]
+tags: ["マルチレベル分析"]
+categories: ["R"]
+date: 2020-07-25T18:40:12+09:00
+lastmod: 2020-07-25T18:40:12+09:00
+featured: false
+draft: false
+math: true
+
+# Featured image
+# To use, add an image named `featured.jpg/png` to your page's folder.
+# Focal points: Smart, Center, TopLeft, Top, TopRight, Left, Right, BottomLeft, Bottom, BottomRight.
+image:
+  caption: ""
+  focal_point: ""
+  preview_only: false
+
+# Projects (optional).
+#   Associate this post with one or more of your projects.
+#   Simply enter your project's folder or file name without extension.
+#   E.g. `projects = ["internal-project"]` references `content/project/deep-learning/index.md`.
+#   Otherwise, set `projects = []`.
+projects: []
+---
+
+### サンプルデータを作成する
+
+以前の「Rによる傾向スコアの実装」で使用したデータと同じ仮想データを用いる。
+
+適当なデータがないため、仮想データを作成する。
+
+- Effect of Targeted Polymyxin B Hemoperfusion on 28-Day Mortality in Patients With Septic Shock and Elevated Endotoxin Level
+
+- The EUPHRATES Randomized Clinical Trialより
+
+- 元ネタは敗血症性ショックに対するエンドトキシン吸着療法の多施設共同RCT(60施設)
+
+- PMX療法(透析)対シャム療法(偽透析：透析している振り)
+
+- サンプル数:450名のRCT
+
+- Age, Sex, 平均血圧(Arterial pressure mean:MAP)、重症度スコア(APACHEⅡ)、人工呼吸器の有無(Mechanical  
+  ventilation)、菌血症の有無(Bacteremia)
+  
+- 介入:エンドトキシン吸着療法(PMX)
+
+- アウトカム:28日後死亡(twentyeight_day_mortality)
+
+- 今回は多施設観察研究と想定し施設数も作成して、10施設とする
+
+JAMA
+
+https://jamanetwork.com/journals/jama/fullarticle/2706139
+
+### パッケージの読み込み
+
+```{r message=FALSE}
+library(dplyr)
+# パイプを使うため
+library(magrittr)
+# シミュレーションデータを作るため
+library(simstudy)
+```
+
+
+### 仮想データの実装
+
+```{r}
+set.seed(123) # seedを設定することで必ず同じデータが毎回できるので再現性の固定
+# まず施設IDの作成
+b <- defData(varname = "institution_id", dist = "noZeroPoisson", formula = 3)
+c <- genData(450, b)
+
+# 各変数の作成
+a <- data.frame(rnorm(450,59,8),rbinom(450,1,prob=0.6),rnorm(450,72,5),rnorm(450,28,5),rbinom(450,1,0.94)
+               ,rbinom(450,1,0.30),rbinom(450,1,0.5),rbinom(450,1,0.34))
+
+colnames(a) <- c('Age','Sex','MAP','APACHEⅡ','Mechanical_ventilation','Bacteremia','PMX','twentyeight_day_mortality')
+# 列の名前を付ける 
+# sex 1=male, Mechanical_ventilation yes=1, Bacteremia yes=1, PMX yes=1, 28day_mortality yes=1 
+```
+
+
+両者を結合する。
+
+```{r}
+pmx <- cbind.data.frame(c,a)
+
+pmx <- as.data.frame(pmx)
+```
+
+
+### 作成したデータの確認
+
+```{r}
+summary(pmx)
+```
+
+
+```{r}
+str(pmx)
+```
+
+
+おおむね狙い通りのデータになっていることが分かる。
+
+今回は２つの解析を行う。
+
+1. マルチレベルロジスティック回帰モデルを実装する。
+
+2. 前回と違い施設というクラスターを含めて傾向スコアを用いて解析を実装する。
+
+まずは1のマルチレベルロジスティック回帰について実装する。
+
+モデルを２つ作成する。
+
+- モデル1:クラスター効果を無視した多変量ロジスティック回帰
+
+- モデル2:クラスター効果を加えたマルチレベルロジスティック回帰
+
+### モデル1 多変量ロジスティック回帰
+
+最初に通常のロジスティック回帰を行う。
+
+このモデルではクラスター効果を無視してモデルを作る。
+
+つまり結果には施設間の差は影響しないという仮定である。
+
+そのため個人レベルでの変数のみが影響するとしてモデルを作成する。
+
+被検者iの死亡する確率を$p_i$とすると、(すなわち死亡という場合の条件付き確率)
+
+$logit(p_i) = log  odds = log(\frac{p_i}{1-p_i}) = M + e_i$
+
+と表すことができる。
+
+ここで、Mはロジスティック尺度で表された集団全体の平均確率、$e_i$はiの残差である。
+
+モデル1では各個人レベルの変数が死亡する確率に影響を与えていると考える。
+
+$logit(p_i) = M  + \beta_1*PMX_i + \beta_2*Age_i + \beta_3*Sex_i + \beta_4*APACH_i + \beta_5*Ven_i + e_i$
+
+として表すことができる。
+
+
+#### 共変量の設定
+
+```{r}
+covariateName_nc <- c(
+  "PMX","Age","Sex","MAP", "APACHEⅡ", "Mechanical_ventilation"
+  )
+```
+
+
+#### 式の作成
+
+```{r}
+nc.formula <- paste(covariateName_nc, collapse="+") 
+nc.formula <- formula(paste("twentyeight_day_mortality~",nc.formula))
+print(nc.formula)
+```
+
+#### ロジスティック回帰
+
+```{r}
+model_nc <- pmx %>% glm(nc.formula, data = ., family = binomial(link = "logit"))
+```
+
+
+#### 結果の確認
+
+```{r}
+summary(model_nc)
+```
+
+オッズ比へ変換する
+
+```{r}
+# オッズ比と95%信頼区間の確認
+nc_odds <- as.data.frame(cbind(exp(summary(model_nc)$coefficient[,1]),exp(confint(model_nc))
+                                    ,summary(model_nc)$coefficient[,4]))
+```
+
+
+```{r}
+# result_oddsというデータフレームの列名を名付ける
+names(nc_odds) <- c("Odds ratio","lower 95%CI","upper 95%CI","P value")
+# 小数点２桁で結果を表示
+round(nc_odds,2)
+```
+
+
+```{r message=FALSE}
+library(pROC)
+
+ROC_nc <- roc(response = pmx$twentyeight_day_mortality, predictor = model_nc$fitted.values)
+ROC_nc
+```
+
+AUC 0.598でモデルの精度は良くないことが分かる。
+
+結果としては、PMXはOR 1.16 (95%CI:0.78 - 1.72)で死亡を減らす関係は認めなかった。
+
+むしろ点推定値と信頼区間を考慮すると若干死亡を高める方向に働いている可能性もある。
+
+しかしAUCが低いことから、そもそもこのモデルの精度が良くないため共変量などについて再考する必要がありそう。
+
+＊人工呼吸器の使用で死亡が減る方向になっている結果は、シミュレーションデータなので今回は無視する。
+
+
+### モデル2:マルチレベルロジスティック回帰
+
+このモデルではクラスター効果を考慮してモデルを作る。
+
+回帰モデルでは観測値の独立性が前提となっている。
+
+しかし各施設内では同じような治療がなされ治療成績が似通っている可能性がある。
+
+逆に言えば施設間でPMXの適応や手技の成熟度、集中治療のレベルなどが違う可能性があり、
+
+個人レベルでの変数のみではなく施設も影響するとしてモデルを作成する必要がある。
+
+施設という階層があり、その下に個人レベルの変数があるという形である。
+
+施設jに所属の個人iの死亡する確率$p_{ij}$は、
+
+- レベル1(個人レベル): $logit(p_{ij}) = M_{0j} + e_{ij}$
+
+- レベル2(集団レベル): $M_{oj} = \gamma_{00} + u_{0j}$
+
+として表すことができる。
+
+$M_{0j}$は集団jの死亡する平均確率、$e_{ij}$は集団jでの個人間の残差を表している。
+
+$\gamma_{00}$は集団全体の死亡する平均確率、$u_{0j}$は集団間の変動を表す。
+
+マルチレベルモデルでは集団によって変動しない値を固定効果(fixed effect)、
+$u_{oj}$のように変動する値を変量効果(random effedt)と呼ぶ。
+
+それぞれが従う分布は平均0、個人レベルの分散$V_I$、集団レベルの分散$V_C$として、
+
+$e_{ij}$ ~ $N(0,V_I)$
+
+$u_{0j}$ ~ $N(0,V_C)$
+
+の正規分布に従うことが仮定される。
+
+最終的にモデル2は、
+
+$logit(p_ij) = \gamma_{00} + u_{0j} + \beta_1*PMX_{ij} + \beta_2*Age_{ij} + \beta_3*Sex_{ij} + \beta_4*APACH_{ij} + \beta_5*Ven_{ij} + e_{ij}$
+
+として表すことができる。
+
+
+#### 共変量の設定
+
+```{r}
+covariateName_c <- c(
+  "PMX","Age","Sex","MAP", "APACHEⅡ", "Mechanical_ventilation"
+  )
+```
+
+
+#### 式の作成
+
+```{r}
+c.formula <- paste(covariateName_c, collapse="+") 
+c.formula <- formula(paste("twentyeight_day_mortality~",c.formula,"+(1|institution_id)"))
+print(c.formula)
+```
+
+#### マルチレベルロジスティック回帰
+
+```{r message=FALSE}
+library(lme4)
+model_c <- pmx %>% glmer(c.formula, data = ., family = binomial(link = "logit"), control = glmerControl(optimizer = "bobyqa"),
+    nAGQ = 10)
+```
+
+
+#### 結果の確認
+
+```{r}
+print(model_c, corr = FALSE)
+```
+
+
+95%信頼区間を求める
+
+通常の方法では出せないので注意
+
+```{r}
+se <- sqrt(diag(vcov(model_c)))
+# table of estimates with 95% CI
+(tab <- cbind(Est = fixef(model_c), LL = fixef(model_c) - 1.96 * se, UL = fixef(model_c) + 1.96 *
+    se))
+
+```
+
+オッズ比を求める
+
+```{r}
+round(exp(tab),2)
+```
+
+
+今回の結果は、ランダム効果の分散は0であり、目的変数には集団による違いはないことになる。
+
+実際、モデル1とモデル2では結果はほぼ同じである。
+
+
+#### 級内相関係数
+
+病院などの集団内でデータがどの程度類似しているかを検討するための指標として、級内相関係数(ICC)がある。
+
+ICCが大きいほど観測値の独立性の仮定からの逸脱が大きいことを意味する。
+
+線形回帰モデルと違いロジスティック回帰モデルでは解釈が難しい。
+
+なぜなら、集団内での分散はロジスティック尺度上にあり、個人レベルの分散は確率であるからである。
+(二項分布の分散Vはp(1-p)である。)
+
+いくつか計算する方法はあるが今回は分散が0のためICCは計算できない。
+
+```{r message=FALSE}
+tau2 <- lme4::VarCorr(model_c)
+tau2
+```
+
+
+### 参考文献
+
+Peter C Austin, Juan Merlo. Intermediate and advanced topics in multilevel logistic regression analysis.
+Stat Med. 2017. 10;36(20):3257 - 3277.
+PMID:28543517.
+
+Juan Merlo, Basile Chais, et.al. A brief conceptual tutorial of multilevel analysis in social epidemiology: using measures of clustering in multilevel logistic regression to investigate contextual phenomena. J Epidemiol Community Health 2006;60:290–297.
+PMID:15911637.
+
+
+Three methods for computing the intra-class correlation in multilevel logistic regression
+https://www.barelysignificant.com/post/icc/
+
+MIXED EFFECTS LOGISTIC REGRESSION | R DATA ANALYSIS EXAMPLES
+https://stats.idre.ucla.edu/r/dae/mixed-effects-logistic-regression/
+
