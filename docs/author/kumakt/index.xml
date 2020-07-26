@@ -5,12 +5,295 @@
     <link>/author/kumakt/</link>
       <atom:link href="/author/kumakt/index.xml" rel="self" type="application/rss+xml" />
     <description>Kumakt</description>
-    <generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><lastBuildDate>Sat, 25 Jul 2020 18:40:12 +0900</lastBuildDate>
+    <generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><lastBuildDate>Sun, 26 Jul 2020 18:40:12 +0900</lastBuildDate>
     <image>
       <url>/images/icon_hu0b7a4cb9992c9ac0e91bd28ffd38dd00_9727_512x512_fill_lanczos_center_2.png</url>
       <title>Kumakt</title>
       <link>/author/kumakt/</link>
     </image>
+    
+    <item>
+      <title>Stataによる線形回帰モデルの実装</title>
+      <link>/post/linear_regression/</link>
+      <pubDate>Sun, 26 Jul 2020 18:40:12 +0900</pubDate>
+      <guid>/post/linear_regression/</guid>
+      <description>&lt;h1 id=&#34;stataによる線形回帰モデル&#34;&gt;Stataによる線形回帰モデル&lt;/h1&gt;
+&lt;p&gt;Stataによる線形回帰モデルを実装する。&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-stata&#34;&gt;# dataの読み込み
+
+use https://www.stata-press.com/data/r16/lbw
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;Unknown #command
+(Hosmer &amp;amp; Lemeshow data)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;公式サイトのデータより読み込み&lt;/p&gt;
+&lt;p&gt;189人の出生児の体重に関する研究のデータ&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-stata&#34;&gt;describe
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;Contains data from https://www.stata-press.com/data/r16/lbw.dta
+  obs:           189                          Hosmer &amp;amp; Lemeshow data
+ vars:            11                          15 Jan 2018 05:01
+--------------------------------------------------------------------------------
+              storage   display    value
+variable name   type    format     label      variable label
+--------------------------------------------------------------------------------
+id              int     %8.0g                 identification code
+low             byte    %8.0g                 birthweight&amp;lt;2500g
+age             byte    %8.0g                 age of mother
+lwt             int     %8.0g                 weight at last menstrual period
+race            byte    %8.0g      race       race
+smoke           byte    %9.0g      smoke      smoked during pregnancy
+ptl             byte    %8.0g                 premature labor history (count)
+ht              byte    %8.0g                 has history of hypertension
+ui              byte    %8.0g                 presence, uterine irritability
+ftv             byte    %8.0g                 number of visits to physician
+                                                during 1st trimester
+bwt             int     %8.0g                 birthweight (grams)
+--------------------------------------------------------------------------------
+Sorted by: 
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2 id=&#34;データの分析&#34;&gt;データの分析&lt;/h2&gt;
+&lt;p&gt;まずデータの分析を行う。&lt;/p&gt;
+&lt;p&gt;目的変数は出生時の体重である。&lt;/p&gt;
+&lt;p&gt;母体の年齢や喫煙などが関与していることが予想される。&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-stata&#34;&gt;su age bwt smoke, detail
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;                        age of mother
+-------------------------------------------------------------
+      Percentiles      Smallest
+ 1%           14             14
+ 5%           16             14
+10%           17             14       Obs                 189
+25%           19             15       Sum of Wgt.         189
+
+50%           23                      Mean            23.2381
+                        Largest       Std. Dev.      5.298678
+75%           26             35
+90%           31             36       Variance       28.07599
+95%           32             36       Skewness       .7164391
+99%           36             45       Kurtosis       3.568442
+
+                     birthweight (grams)
+-------------------------------------------------------------
+      Percentiles      Smallest
+ 1%         1021            709
+ 5%         1790           1021
+10%         1970           1135       Obs                 189
+25%         2414           1330       Sum of Wgt.         189
+
+50%         2977                      Mean           2944.286
+                        Largest       Std. Dev.       729.016
+75%         3475           4174
+90%         3884           4238       Variance       531464.4
+95%         3997           4593       Skewness      -.2069782
+99%         4593           4990       Kurtosis       2.888821
+
+                   smoked during pregnancy
+-------------------------------------------------------------
+      Percentiles      Smallest
+ 1%            0              0
+ 5%            0              0
+10%            0              0       Obs                 189
+25%            0              0       Sum of Wgt.         189
+
+50%            0                      Mean           .3915344
+                        Largest       Std. Dev.      .4893898
+75%            1              1
+90%            1              1       Variance       .2395024
+95%            1              1       Skewness       .4444461
+99%            1              1       Kurtosis       1.197532
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code class=&#34;language-stata&#34;&gt;tabulate low smoke, chi2 column
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;+-------------------+
+| Key               |
+|-------------------|
+|     frequency     |
+| column percentage |
++-------------------+
+
+           |     smoked during
+birthweigh |       pregnancy
+   t&amp;lt;2500g | nonsmoker     smoker |     Total
+-----------+----------------------+----------
+         0 |        86         44 |       130 
+           |     74.78      59.46 |     68.78 
+-----------+----------------------+----------
+         1 |        29         30 |        59 
+           |     25.22      40.54 |     31.22 
+-----------+----------------------+----------
+     Total |       115         74 |       189 
+           |    100.00     100.00 |    100.00 
+
+          Pearson chi2(1) =   4.9237   Pr = 0.026
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;低体重と母体の喫煙歴の関係を見ると、明らかに喫煙歴のある母体の方が低体重出生児が多い。&lt;/p&gt;
+&lt;p&gt;$$\chi^2$$検定でも有意に喫煙歴がある方が低体重出生児が多いという結果であった。&lt;/p&gt;
+&lt;h3 id=&#34;グラフで可視化する&#34;&gt;グラフで可視化する&lt;/h3&gt;
+&lt;pre&gt;&lt;code class=&#34;language-stata&#34;&gt;# ヒストグラム作成
+
+hist bwt, bin(25)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;./output_10_1.pdf&#34; alt=&#34;pdf&#34;&gt;&lt;/p&gt;
+&lt;p&gt;次は散布図を作成する&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-stata&#34;&gt;# 散布図を作成
+
+scatter bwt age
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;./output_11_1.pdf&#34; alt=&#34;pdf&#34;&gt;&lt;/p&gt;
+&lt;h2 id=&#34;線形回帰モデルの作成&#34;&gt;線形回帰モデルの作成&lt;/h2&gt;
+&lt;p&gt;出生時の体重と母体の年齢が線形であると仮定すると、&lt;/p&gt;
+&lt;p&gt;$$Y_{i(bwt)} = \beta_0 + \beta*x_{i(age)} + \epsilon$$&lt;/p&gt;
+&lt;p&gt;と表すことができる。&lt;/p&gt;
+&lt;p&gt;$$\epsilon$$は残差である。&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-stata&#34;&gt;regress bwt age
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;      Source |       SS           df       MS      Number of obs   =       189
+-------------+----------------------------------   F(1, 187)       =      1.51
+       Model |  800428.169         1  800428.169   Prob &amp;gt; F        =    0.2207
+    Residual |  99114870.4       187  530026.045   R-squared       =    0.0080
+-------------+----------------------------------   Adj R-squared   =    0.0027
+       Total |  99915298.6       188  531464.354   Root MSE        =    728.03
+
+------------------------------------------------------------------------------
+         bwt |      Coef.   Std. Err.      t    P&amp;gt;|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+         age |   12.31444   10.02079     1.23   0.221     -7.45389    32.08277
+       _cons |   2658.122   238.8097    11.13   0.000     2187.014    3129.229
+------------------------------------------------------------------------------
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;回帰式のモデルの結果は、&lt;/p&gt;
+&lt;p&gt;$$Y_{i(bwt)} = 12.31*x_{i(age)} + 2658.122$$&lt;/p&gt;
+&lt;p&gt;である。&lt;/p&gt;
+&lt;p&gt;つまり母体の年齢が1歳増えるごとに12.31gずつ体重が増えることになる。&lt;/p&gt;
+&lt;p&gt;しかし、そもそも母体の年齢と体重には線形の関係がはっきりはなさそうである。&lt;/p&gt;
+&lt;p&gt;今回のモデルの決定係数も0.0027と非常に低い。&lt;/p&gt;
+&lt;p&gt;むしろ他のモデルを考えた方が良さそうである。&lt;/p&gt;
+&lt;h2 id=&#34;重回帰モデル&#34;&gt;重回帰モデル&lt;/h2&gt;
+&lt;p&gt;先のモデルでは、年齢と低体重出生児との関係はあまりなさそうであった。&lt;/p&gt;
+&lt;p&gt;むしろモデルには喫煙歴などを含めた方がよいモデルができる可能性が高い。&lt;/p&gt;
+&lt;p&gt;今度は母体の喫煙歴、年齢、人種で調整したモデルの作成を行う。&lt;/p&gt;
+&lt;p&gt;$$Y_{i(bwt)} = \beta_0 + \beta_1*x_{i(smoke)} + \beta_2*x_{i(age)} + \beta_3*x_{i(race)} + \epsilon$$&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-stata&#34;&gt;regress bwt smoke age i.race
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;      Source |       SS           df       MS      Number of obs   =       189
+-------------+----------------------------------   F(4, 184)       =      6.50
+       Model |  12366825.4         4  3091706.34   Prob &amp;gt; F        =    0.0001
+    Residual |  87548473.2       184   475806.92   R-squared       =    0.1238
+-------------+----------------------------------   Adj R-squared   =    0.1047
+       Total |  99915298.6       188  531464.354   Root MSE        =    689.79
+
+------------------------------------------------------------------------------
+         bwt |      Coef.   Std. Err.      t    P&amp;gt;|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+       smoke |  -425.5563   109.9505    -3.87   0.000    -642.4822   -208.6304
+         age |   1.998899   9.767361     0.20   0.838    -17.27152    21.26932
+             |
+        race |
+      black  |  -444.6489   156.1404    -2.85   0.005    -752.7047   -136.5931
+      other  |   -449.481   118.9765    -3.78   0.000    -684.2147   -214.7474
+             |
+       _cons |   3284.964   260.5749    12.61   0.000     2770.865    3799.062
+------------------------------------------------------------------------------
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;今回のモデルではProb &amp;gt; Fを見ると、このモデルは有意であり、調整決定係数も最初のモデルより改善している。&lt;/p&gt;
+&lt;p&gt;それでも係数は低く、あまりこのモデルでは説明できていないことになる。&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-stata&#34;&gt;estat esize
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;Effect sizes for linear models
+
+-----------------------------------------------------------------
+             Source | Eta-Squared     df     [95% Conf. Interval]
+--------------------+--------------------------------------------
+              Model |   .1237731       4     .0358881    .1997528
+                    |
+              smoke |   .0752852       1     .0183756    .1560631
+                age |   .0002276       1            .    .0199652
+               race |   .0847912       2     .0197304    .1627342
+-----------------------------------------------------------------
+Note: Eta-Squared values for individual model terms are partial.
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;このコマンドをすることでこのモデル式の全体での効果サイズが分かる。&lt;/p&gt;
+&lt;p&gt;全体では0.124であり、修正前の決定係数と同じ値である。&lt;/p&gt;
+&lt;p&gt;つまり修正前の決定係数によれば、bwtの変化の約12.4%がこのモデルによって説明されることを示している。&lt;/p&gt;
+&lt;p&gt;下の数値は各変数の効果サイズで、smokeは他のすべての項で説明されている変化を除いて約7.7%bwtの変化を説明
+できることを意味する。&lt;/p&gt;
+&lt;h2 id=&#34;モデルの評価&#34;&gt;モデルの評価&lt;/h2&gt;
+&lt;p&gt;線形回帰モデルでは残差の正規性と等分散性が前提となっている。&lt;/p&gt;
+&lt;p&gt;そのため、それを確認する必要がある。&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-stata&#34;&gt;# 推定値を求める
+
+regress bwt smoke age i.race
+predict re, residuals
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;Unknown #command
+
+      Source |       SS           df       MS      Number of obs   =       189
+-------------+----------------------------------   F(4, 184)       =      6.50
+       Model |  12366825.4         4  3091706.34   Prob &amp;gt; F        =    0.0001
+    Residual |  87548473.2       184   475806.92   R-squared       =    0.1238
+-------------+----------------------------------   Adj R-squared   =    0.1047
+       Total |  99915298.6       188  531464.354   Root MSE        =    689.79
+
+------------------------------------------------------------------------------
+         bwt |      Coef.   Std. Err.      t    P&amp;gt;|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+       smoke |  -425.5563   109.9505    -3.87   0.000    -642.4822   -208.6304
+         age |   1.998899   9.767361     0.20   0.838    -17.27152    21.26932
+             |
+        race |
+      black  |  -444.6489   156.1404    -2.85   0.005    -752.7047   -136.5931
+      other  |   -449.481   118.9765    -3.78   0.000    -684.2147   -214.7474
+             |
+       _cons |   3284.964   260.5749    12.61   0.000     2770.865    3799.062
+------------------------------------------------------------------------------
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code class=&#34;language-stata&#34;&gt;### 残差の正規性の確認
+
+hist re, normal
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;./output_22_1.pdf&#34; alt=&#34;pdf&#34;&gt;&lt;/p&gt;
+&lt;p&gt;正規性は保たれているようである。&lt;/p&gt;
+&lt;h4 id=&#34;qq-plot&#34;&gt;QQ plot&lt;/h4&gt;
+&lt;pre&gt;&lt;code class=&#34;language-stata&#34;&gt;
+qnorm re
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;./output_23_1.pdf&#34; alt=&#34;pdf&#34;&gt;&lt;/p&gt;
+&lt;h4 id=&#34;統計学的検定&#34;&gt;統計学的検定&lt;/h4&gt;
+&lt;pre&gt;&lt;code class=&#34;language-stata&#34;&gt;
+sktest re
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;Skewness and kurtosis tests for normality
+                                                         ----- Joint test -----
+    Variable |       Obs   Pr(skewness)   Pr(kurtosis)   Adj chi2(2)  Prob&amp;gt;chi2
+-------------+-----------------------------------------------------------------
+          re |       189         0.0555         0.9848          3.71     0.1564
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;帰無仮説は「残差に正規性がある」である。&lt;/p&gt;
+&lt;p&gt;棄却されると正規性がないことになる。&lt;/p&gt;
+&lt;h3 id=&#34;等分散性の確認&#34;&gt;等分散性の確認&lt;/h3&gt;
+&lt;pre&gt;&lt;code class=&#34;language-stata&#34;&gt;rvfplot, yline(0)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;./output_27_0.pdf&#34; alt=&#34;pdf&#34;&gt;&lt;/p&gt;
+&lt;h4 id=&#34;統計学的検定-1&#34;&gt;統計学的検定&lt;/h4&gt;
+&lt;pre&gt;&lt;code class=&#34;language-stata&#34;&gt;
+
+hettest
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;Breusch-Pagan / Cook-Weisberg test for heteroskedasticity 
+         Ho: Constant variance
+         Variables: fitted values of bwt
+
+         chi2(1)      =     0.00
+         Prob &amp;gt; chi2  =   0.9961
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;棄却されないので、等分散性は少なくとも否定はされないことになる。&lt;/p&gt;
+&lt;h4 id=&#34;参考文献&#34;&gt;参考文献&lt;/h4&gt;
+&lt;p&gt;Stata公式資料&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://www.stata-press.com&#34;&gt;https://www.stata-press.com&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;講義プリント&lt;/p&gt;
+</description>
+    </item>
     
     <item>
       <title>Rによるマルチレベル分析の実装</title>
