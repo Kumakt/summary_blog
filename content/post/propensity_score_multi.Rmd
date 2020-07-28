@@ -1,0 +1,565 @@
+---
+# Documentation: https://sourcethemes.com/academic/docs/managing-content/
+
+title: "Rによる傾向スコア分析の実装２"
+subtitle: "後編"
+summary: "マルチレベルデータに対する傾向スコア分析"
+authors: [Kumakt]
+tags: ["傾向スコア","マルチレベル分析","生存時間解析"]
+categories: ["R"]
+date: 2020-07-28T17:13:22+09:00
+lastmod: 2020-07-28T17:13:22+09:00
+featured: false
+draft: false
+math: true
+
+# Featured image
+# To use, add an image named `featured.jpg/png` to your page's folder.
+# Focal points: Smart, Center, TopLeft, Top, TopRight, Left, Right, BottomLeft, Bottom, BottomRight.
+image:
+  caption: ""
+  focal_point: ""
+  preview_only: false
+
+# Projects (optional).
+#   Associate this post with one or more of your projects.
+#   Simply enter your project's folder or file name without extension.
+#   E.g. `projects = ["internal-project"]` references `content/project/deep-learning/index.md`.
+#   Otherwise, set `projects = []`.
+projects: []
+---
+
+## テーマ
+
+- マルチレベルデータに対する生存時間解析
+- マルチレベルデータに対する傾向スコアを用いた生存時間解析
+
+
+前回用いたシミュレーションデータでは、マルチレベルデータを用いた傾向スコア法でも
+結果が変わらなかった。
+おそらくシミュレーションデータのためであろう。
+
+今回はオープンアクセスデータを用いた実装を行う。
+
+データは以下から引用した。
+
+Citation
+Shiroshita, Akihiro (2020), Effectiveness of steroid therapy on pneumonic chronic obstructive pulmonary disease exacerbation: a multi-centred retrospective cohort study, v3, Dryad, Dataset, https://doi.org/10.5061/dryad.m63xsj3zd
+
+
+## データの読み込み
+
+```{r include=FALSE}
+copd <- read.csv("C:/Users/qqd68/OneDrive/SPH/R/training data/Datesets/other_datasets/pneumocopd_analysis_dryad-2.csv")
+```
+
+
+## データの確認
+
+```{r}
+summary(copd)
+str(copd)
+```
+
+
+## データ整形
+
+- rrは離散値をとる数値型のはずが、因子型になっている。
+- のちのためにも変換が必要
+- 同じく従属変数も数値型へ変換
+
+```{r}
+copd$rr <- as.numeric(copd$rr)
+str(copd$rr)
+# 従属変数の変換
+copd$stability <- as.numeric(copd$stability)
+str(copd$stability)
+# 時間変数も数値型へ変換
+copd$time_to_stability <- as.numeric(copd$time_to_stability)
+str(copd$time_to_stability)
+```
+
+
+
+数値型になったことを確認できた。
+
+
+## データの概要
+
+元論文より引用
+
+日本のデータで５施設からの多施設後ろ向きコホート研究
+
+ステロイド投与が慢性閉塞性肺疾患に与える影響を調べた1237人のデータ,19変数
+
+＜変数名＞
+id: anonimized patients' ID, 
+
+age: patients' age on hospitalization, 
+
+gender: 1=male, 2=female,
+
+steroid: steroid use (0=not, 1=steroid use), 
+
+hospital: categorized hospital name (1-5まで病院コード), 
+
+adl: activity daily living before hospitalization (0: full support, 1: not full support), 
+
+wheeze: wheezing lung sound on admission (0:not, 1:wheezing lung sound), 
+
+bun: blood urea nitrogen (mg/dL), 
+
+rr: respiratory rate (/minute), 
+
+ams: altered mental status (0=not, 1=altered mental status), 
+
+hr: heart rate (/minute), 
+
+hot: home oxygen therapy use before hospitalization (0=not, 1=users), 
+
+insulin: new insuline users during hospitalization (0=not, 1=new users), 
+
+delirium: clinical diagnosis of delirium during hospitalization (0=not, 1=delirium), 
+
+stability: reaching the clinical stability (0=not, 1=reached clinical stability), 
+
+time_to_stability: time to clinical stability (days), 
+
+death:in-hospital death, 
+
+non-informative_censoring: non-informative censoring (0=not, 1=noninformative
+censoring), 
+
+discharge (0=not, 1=discharged patients), 
+
+intubation: tracheal
+
+intubation during hospitalization (0=not, 1=intubated), 
+
+hospitalization=length of stay (days)
+
+＜アウトカム＞
+stability：臨床的安定の達成
+
+＜曝露＞
+steroid:ステロイド使用の有無
+
+## 今回考え得るモデル
+
+1. Complete case analysis + 多変量生存時間解析 with/without マルチレベル分析<br>
+2. Complete case analysis + 傾向スコア + 生存時間解析 with/without マルチレベル分析<br>
+3. 多重代入による欠損値処理 + 傾向スコア + 生存時間解析 with/without マルチレベル分析
+
+## Complete case analysis:その1
+
+欠損値への対処がやっかいなのでまずはcomplete case analysisを行う。
+
+```{r}
+# na.omitは欠損値を除く関数
+copd_ca <- na.omit(copd)
+```
+
+
+## データの概要
+
+```{r}
+summary(copd_ca)
+nrow(copd_ca)
+```
+
+
+欠損値はすべてなくなり、1119例となっていることが分かる。
+
+## 式の作成
+
+共変量設定
+
+```{r}
+covariateNames_ca <-  
+  c("gender",#性別
+    "age",#年齢
+    "hot", #在宅酸素療法の有無
+    "adl",#ADL
+    "rr", #呼吸数
+    "ams", # 意識状態
+    "hr", #心拍数
+    "bun" #BUN
+    #著者らは先行研究に基づいて決定
+    )
+```
+
+
+## 生存時間解析
+
+### カプランマイヤー法で評価
+
+```{r message=FALSE}
+library(survival)
+library(survminer)
+library(ggplot2)
+```
+
+
+```{r}
+sv_result <- survfit(Surv(copd_ca$time_to_stability,copd_ca$stability) ~ copd_ca$steroid)
+```
+
+
+```{r message=FALSE}
+ggsurvplot(sv_result, data = copd_ca, censor.shape = "|",risk.table = TRUE,risk.table.col = "strata")
+```
+
+比例ハザード性は判断が難しい。
+
+
+## ログランク検定
+
+```{r}
+survdiff(Surv(copd_ca$time_to_stability,copd_ca$stability) ~ copd_ca$steroid)
+```
+
+結果はp value = 0.05 とこちらも微妙...
+
+そもそもとしてCoxの比例ハザードモデルを考えてよいかが問題となってくる。
+
+元論文では競合リスクを考慮した解析を行っている。
+
+一応ここでは通常のCox比例ハザードモデルを行う。
+
+ここからモデル作成を行う
+
+
+## モデル1-1:random効果を無視した生存時間解析(通常の多変量比例ハザードモデル)
+
+ここから解析を行う.
+
+ここでのステロイドの治療は施設ごとでも差がないとの仮定に基づいている。
+
+```{r}
+library(survival)
+model_ca_nm <- coxph(data = copd_ca, Surv(time_to_stability,stability) ~　steroid + age + gender + hot + adl + ams + rr + hr + bun)
+```
+
+
+係数の確認
+
+
+```{r}
+summary(model_ca_nm)
+round(exp(confint(model_ca_nm)),3)
+round(exp(coefficients(model_ca_nm)),3)
+```
+
+
+ステロイドの使用はHR 0.886 (95%CI 0.778 - 1.010)<br>
+状態安定に影響を与えるとは言えない結果であった。<br>
+(イベントが状態がよい=1のためHRが1を超えると状態を安定させる方向)
+
+## モデル1-2:random効果を考慮したモデル
+
+```{r warning=FALSE, message=FALSE}
+# GLMMで扱うパッケージ
+library(lme4)
+model_ca_ri <- coxme::coxme(data = copd_ca, Surv(time_to_stability,stability) ~　steroid + age + gender + hot + adl + ams + rr + hr + bun + (1|hospital))
+```
+
+
+最後の(1|hospital)が施設ごとに切片が違うことを表している。
+
+```{r}
+# 結果の確認
+summary(model_ca_ri)
+round(exp(confint(model_ca_ri)),3)
+round(exp(coefficients(model_ca_ri)),3)
+```
+
+
+ランダム切片モデルで考えると＜曝露＞ステロイドの使用は有意であった。<br>
+今回は臨床的な病態安定の達成をイベントとして1とカウントしている。<br>
+HR 0.83ということはむしろ安定させない方向に働くと考えられる。
+
+
+### モデル1-2:切片のチェック
+
+```{r}
+library(lme4)
+ranef(model_ca_ri)
+```
+
+
+病院別のランダム切片の値を確認するとそれぞればらつきがあることが分かる。<br>
+病院1,2の方が基本イベント達成しやすい傾向があるようだ。<br>
+この辺りは病院による何らかの特性の違いを反映していると考えられる。
+
+しかし、そもそもageや在宅酸素が正の値をとっていることから<br>
+年齢が高くなる、在宅酸素をしていると病態が安定するという結果になる。
+
+臨床的な感覚からすると矛盾であり、データの妥当性やモデルの妥当性を含めて検証が必要かもしれない。
+
+
+## model2-1:傾向スコア + ランダム効果を無視
+
+まずクラスター効果を無視した傾向スコアを算出する。
+
+### 治療指標の作成
+
+今後の便利のためsteroidとは別に治療指標という変数を作成する、治療指標は因子型としておく
+
+```{r}
+copd_ca$treated <- as.factor(copd_ca$steroid)
+```
+
+
+### 連続予測子の標準化
+
+```{r}
+#標準化された連続予測子
+for (var in covariateNames_ca) {
+  if (class(copd_ca[,var])!="factor") { copd_ca[,var] = (copd_ca[,var]-mean(copd_ca[,var]))/sd(copd_ca[,var]) } }
+```
+
+
+### 傾向スコアの推定
+
+```{r}
+#ロジスティック回帰モデルの式の作成
+ps.formula0 <- paste(covariateNames_ca, collapse="+") 
+ps.formula0 <- formula(paste("treated~",ps.formula0))
+print(ps.formula0)
+```
+
+
+```{r}
+#クラスタリングを無視した傾向スコアの推定
+ps.model0 <- glm(ps.formula0, data = copd_ca, family=binomial)
+
+#クラスタリングを無視した傾向スコアを得る
+copd_ca$ps0 <- fitted(ps.model0)
+```
+
+
+### 共通指示の評価(傾向スコアの分布にばらつきがないか)
+
+```{r}
+hist(copd_ca$ps0[copd_ca$treated==0], density = 10, angle = 45, main="Propensity Scores",
+     breaks=seq(0,1,by=0.01),
+     xlim=c(0,1), ylim=c(0,60), xlab="Shaded = Untreated | Gray = Steroid")
+hist(copd_ca$ps0[copd_ca$treated==1], col=gray(0.4,0.25), breaks=seq(0,1,by=0.01),
+     xlim=c(0,1), ylim=c(0,60),add=T) 
+```
+
+
+傾向スコアの分布は同じくらいであることが分かる。
+
+
+### ATEの推定
+
+今回の興味は試験に参加した全集団にステロイド使用した場合の平均因果効果である。
+
+
+```{r}
+# 重みの計算
+copd_ca$psw0 <- with(copd_ca, ifelse(treated==1, 1/ps0, 1/(1-ps0)))
+#重みの正規化
+copd_ca$psw0 <- copd_ca$psw0/mean(copd_ca$psw0)
+# 統合
+with(copd_ca, by(psw0, steroid, summary))
+```
+
+
+### 両群のバランス評価
+
+傾向スコアで調整するにあたり、曝露群と非曝露群でバランスがとれているかの評価が必要
+
+まずはベースラインでの評価を行う
+
+```{r warning=FALSE,message=FALSE}
+require(twang)
+
+baseline.balance0 <- bal.stat(data=copd_ca,#dataset
+                          var=covariateNames_ca,#list of the variables to be included in the balance check
+                          treat.var="treated",#treatment assignment variable
+                          w.all=1,#define weights equal to 1 (no weighting)
+                          sampw=1,#define the sampling weights (no weighting)
+                          get.means=T, #compute means and variances
+                          get.ks=F,#overwrite the default for obtaining KS statistic
+                          estimand="ATE",#specify the estimand of interest
+                          multinom=F)#underline that multinomial ps are not used
+baseline.balance.es <- baseline.balance0$results
+
+summary(abs(baseline.balance.es$std.eff.sz))
+```
+
+標準化効果量は最大で0.18266とバランスがとれていない項目があることが分かる。
+
+続いて傾向スコアで重みづけした後のバランス評価を行う。
+
+
+```{r}
+psw.balance0 <- bal.stat(data=copd_ca,#dataset
+                          var=covariateNames_ca,#list of the variables to be included in the balance check
+                          treat.var="treated",#treatment assignment variable
+                          w.all=copd_ca$psw0,#define the overall weights
+                          sampw=1,#define the sampling weights
+                          get.means=T, #compute means and variances
+                          get.ks=F,#overwrite the default for obtaining KS statistic
+                          estimand="ATE",#specify the estimand of interest
+                          multinom=F)#underline that multinomial ps are not used
+
+
+psw.balance.table0 <- psw.balance0$results
+
+summary(abs(psw.balance.table0$std.eff.sz))
+```
+
+
+標準効果量の最大値は0.0033863であり両群でバランスがとれていることが分かる。
+
+
+### 生存時間解析
+
+```{r}
+library(hrIPW)
+
+model_ca_ps <- coxph(data = copd_ca, Surv(time_to_stability,stability) ~　treated, weights = psw0, robust = TRUE)
+```
+
+
+結果確認
+
+```{r}
+summary(model_ca_ps)
+round(exp(confint(model_ca_ps)),3)
+round(exp(coefficients(model_ca_ps)),3)
+```
+
+
+ロバスト推定した場合：HR 0.888、95%CI: 0.781 - 1.008で有意にはならなかった。
+
+## model2-2:傾向スコア + ランダム効果を含む
+
+### 2-1.マルチレベルロジスティック回帰モデル式の作成
+
+```{r}
+ps.formula <- paste(covariateNames_ca, collapse="+") 
+# 今回はクラスター効果を示す変数がはいっている
+ps.formula <- formula(paste("steroid~",ps.formula,"+ (1|hospital)"))
+```
+
+
+### 2-2.ランダム切片によるマルチレベルロジスティック回帰
+
+```{r}
+#ランダム切片によるマルチレベルモデル             
+ps.model <- glmer(formula = ps.formula, family = binomial, data = copd_ca, 
+                 #it was necessary to use the "control" argument to obtain convergence
+                 #by chaing the optimizer and increasing the number of iterations
+                  control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5))) 
+#使用する非線形オプティマイザや非線形オプティマイザに渡すパラメータなどの制御パラメータを含むリスト
+```
+
+
+### 2-3. 傾向スコアを得る
+
+```{r}
+#傾向スコアを得
+copd_ca$ps=fitted(ps.model) ##extract the model estimated propensity scores
+
+with(copd_ca, by(ps, treated, summary))
+```
+
+
+### 2-4. 共通支持を評価
+
+```{r}
+hist(copd_ca$ps[copd_ca$treated==0], density = 10, angle = 45, main="Propensity Scores",
+     breaks=seq(0,1,by=0.01),
+     xlim=c(0,1), ylim=c(0,40), xlab="Shaded = Untreated | Gray = Treated")
+
+hist(copd_ca$ps[copd_ca$treated==1], col=gray(0.4,0.25), breaks=seq(0,1,by=0.01),
+     xlim=c(0,1), ylim=c(0,40),add=T) 
+```
+
+
+傾向スコアのばらつきはあるが重なりは同じくらいであることが分かる
+
+傾向スコアのカーネル密度推定
+
+```{r}
+densityplot( ~ ps, groups=steroid, plot.points=F, xlim=c(0,1), 
+             data = copd_ca,  ylab = "Propensity Scores", xlab = "Treatment",auto.key = TRUE)
+```
+
+
+### 2-5. ATEの推定
+
+今回も興味は試験に参加した全集団でのステロイドの因果効果である。
+
+```{r}
+# 重みの計算
+copd_ca$psw <- with(copd_ca, ifelse(treated==1, 1/ps, 1/(1-ps)))
+#重みの正規化
+copd_ca$psw <- copd_ca$psw/mean(copd_ca$psw)
+# 統合
+with(copd_ca, by(psw, steroid, summary))
+```
+
+
+```{r}
+psw.balance <- bal.stat(data=copd_ca,#dataset
+                          var=covariateNames_ca,#list of the variables to be included in the balance check
+                          treat.var="treated",#treatment assignment variable
+                          w.all=copd_ca$psw,#define the overall weights
+                          sampw=1,#define the sampling weights
+                          get.means=T, #compute means and variances
+                          get.ks=F,#overwrite the default for obtaining KS statistic
+                          estimand="ATE",#specify the estimand of interest
+                          multinom=F)#underline that multinomial ps are not used
+
+
+psw.balance.table <- psw.balance$results
+
+summary(abs(psw.balance.table$std.eff.sz))
+```
+
+
+最大でも標準効果量が0.1未満であり両群のバランスは保たれている。
+
+
+```{r}
+model_ca_psw <- coxph(data = copd_ca, Surv(time_to_stability,stability) ~　treated, weights = psw, robust = TRUE)
+```
+
+
+結果確認
+
+```{r}
+summary(model_ca_psw)
+round(exp(confint(model_ca_psw)),3)
+round(exp(coefficients(model_ca_psw)),3)
+```
+
+HR 0.831, 95%CI:0.726 - 0.951
+
+施設のランダム効果を考慮して傾向スコアを算出し、ATEを推定して生存時間解析を行うと結果は有意であった。
+
+## 結果のまとめ
+
+今回の結果では、クラスター効果を無視した解析を行うと興味のある曝露の効果は有意とはならず、<br>
+クラスター効果を考慮した解析を行うと有意になった。
+
+傾向スコアを推定した場合としていない場合とでは点推定値および信頼区間には大きな差はなかった。
+
+
+##【reference】
+
+- Citation
+Shiroshita, Akihiro (2020), Effectiveness of steroid therapy on pneumonic chronic obstructive pulmonary disease exacerbation: a multi-centred retrospective cohort study, v3, Dryad, Dataset, https://doi.org/10.5061/dryad.m63xsj3zd
+
+Fan Li, Alan M Zaslavsky, Mary Beth Landrum
+Propensity socre weighing with multilevel data. Stat Med. 2013.30;32(19):3373 - 87.
+
+P.Austin 
+Variance estimation when using inverse probability of treatment weighting with survival analysis.
+Stat Med. 2016.35(30):5642 - 55.
+
