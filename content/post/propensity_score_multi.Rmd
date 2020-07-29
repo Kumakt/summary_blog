@@ -49,9 +49,12 @@ Shiroshita, Akihiro (2020), Effectiveness of steroid therapy on pneumonic chroni
 
 ## データの読み込み
 
+実際には上記のサイトより引用
+
 ```{r include=FALSE}
-copd <- read.csv("C:/Users/qqd68/OneDrive/SPH/R/training data/Datesets/other_datasets/pneumocopd_analysis_dryad-2.csv")
+copd <- read.csv("C:/Users/qqd68/Downloads/pneumocopd_analysis_dryad-2.csv")
 ```
+
 
 
 ## データの確認
