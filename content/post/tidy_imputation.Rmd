@@ -146,13 +146,15 @@ sub_CKD$confint
 
 ## まとめて表示
 
-```{r}
+```{r message=FALSE}
 df <- sub_CKD %>% 
   select(CKD, cols = c(coefs,confint)) %>%
   unnest() %>% 
   filter(term != "(Intercept)") %>% # 切片は無視
   mutate_if(is_double,round,digits =2) %>%
   mutate_if(is.double,exp) #95CIと係数をexp変換したいとき
+
+df
 ```
 
 
