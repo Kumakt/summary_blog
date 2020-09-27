@@ -5,12 +5,263 @@
     <link>/</link>
       <atom:link href="/index.xml" rel="self" type="application/rss+xml" />
     <description>Kumakt Memorandum</description>
-    <generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><lastBuildDate>Tue, 28 Jul 2020 17:13:22 +0900</lastBuildDate>
+    <generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><lastBuildDate>Sun, 27 Sep 2020 15:38:38 +0900</lastBuildDate>
     <image>
       <url>/images/icon_hu0b7a4cb9992c9ac0e91bd28ffd38dd00_9727_512x512_fill_lanczos_center_2.png</url>
       <title>Kumakt Memorandum</title>
       <link>/</link>
     </image>
+    
+    <item>
+      <title>Tidyな医療系データ処理</title>
+      <link>/post/tidy_imputation/</link>
+      <pubDate>Sun, 27 Sep 2020 15:38:38 +0900</pubDate>
+      <guid>/post/tidy_imputation/</guid>
+      <description>
+&lt;script src=&#34;./rmarkdown-libs/htmlwidgets/htmlwidgets.js&#34;&gt;&lt;/script&gt;
+&lt;script src=&#34;./rmarkdown-libs/jquery/jquery.min.js&#34;&gt;&lt;/script&gt;
+&lt;link href=&#34;./rmarkdown-libs/datatables-css/datatables-crosstalk.css&#34; rel=&#34;stylesheet&#34; /&gt;
+&lt;script src=&#34;./rmarkdown-libs/datatables-binding/datatables.js&#34;&gt;&lt;/script&gt;
+&lt;link href=&#34;./rmarkdown-libs/dt-core/css/jquery.dataTables.min.css&#34; rel=&#34;stylesheet&#34; /&gt;
+&lt;link href=&#34;./rmarkdown-libs/dt-core/css/jquery.dataTables.extra.css&#34; rel=&#34;stylesheet&#34; /&gt;
+&lt;script src=&#34;./rmarkdown-libs/dt-core/js/jquery.dataTables.min.js&#34;&gt;&lt;/script&gt;
+&lt;link href=&#34;./rmarkdown-libs/crosstalk/css/crosstalk.css&#34; rel=&#34;stylesheet&#34; /&gt;
+&lt;script src=&#34;./rmarkdown-libs/crosstalk/js/crosstalk.min.js&#34;&gt;&lt;/script&gt;
+
+
+&lt;div id=&#34;テーマ&#34; class=&#34;section level2&#34;&gt;
+&lt;h2&gt;テーマ&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;Tidyなデータ処理についてはWebに有用な情報がたくさんある。&lt;/li&gt;
+&lt;li&gt;医療系のデータについて具体例がないため仮想データで解析してみる。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/div&gt;
+&lt;div id=&#34;パッケージの読み込み&#34; class=&#34;section level2&#34;&gt;
+&lt;h2&gt;パッケージの読み込み&lt;/h2&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;library(dplyr)
+library(magrittr)
+library(tidyverse)
+library(broom)&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;div id=&#34;データの作成&#34; class=&#34;section level2&#34;&gt;
+&lt;h2&gt;データの作成&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;架空データを作成：CKD患者さんにRAS阻害剤を投与した場合の１年後End_stage_CKDの有無を調べたデータ&lt;/li&gt;
+&lt;li&gt;簡単のため時間は無視&lt;/li&gt;
+&lt;/ul&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;set.seed(125) # 乱数の固定のシード
+a &amp;lt;- rnorm(n = 200, mean = 140, sd = 10 )
+b &amp;lt;- rnorm(n = 200, mean = 60, sd = 5 )
+c &amp;lt;- rep(c(&amp;quot;A_hosp&amp;quot;,&amp;quot;B_hosp&amp;quot;),100)
+d &amp;lt;- c( rep(&amp;quot;Stage4&amp;quot;,75), rep(&amp;quot;Stage3b&amp;quot;,70), rep(&amp;quot;Stage3a&amp;quot;,55))
+e &amp;lt;- rbinom(200,1,0.6)
+f &amp;lt;- rbinom(200,1,0.4)
+g &amp;lt;- rbinom(200,1,0.25)
+h &amp;lt;- rbinom(200,1,0.3)
+study &amp;lt;- data.frame(a,b,c,d,e,f,g,h)
+name  &amp;lt;- c(&amp;quot;SBP&amp;quot;, &amp;quot;Age&amp;quot;, &amp;quot;Hospital&amp;quot;,&amp;quot;CKD&amp;quot;,&amp;quot;Sex&amp;quot;,&amp;quot;RAS_inhibitor&amp;quot;,&amp;quot;DM&amp;quot;,&amp;quot;End_stage_CKD&amp;quot;) 
+colnames(study) &amp;lt;- name&lt;/code&gt;&lt;/pre&gt;
+&lt;ul&gt;
+&lt;li&gt;イメージとしては２つの病院でCKD3a以上の200人のデータを調べたデータ&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/div&gt;
+&lt;div id=&#34;data確認&#34; class=&#34;section level2&#34;&gt;
+&lt;h2&gt;data確認&lt;/h2&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;summary(study)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;##       SBP             Age          Hospital        CKD          Sex       
+##  Min.   :103.9   Min.   :46.52   A_hosp:100   Stage3a:55   Min.   :0.000  
+##  1st Qu.:134.0   1st Qu.:55.69   B_hosp:100   Stage3b:70   1st Qu.:0.000  
+##  Median :140.8   Median :59.28                Stage4 :75   Median :1.000  
+##  Mean   :140.6   Mean   :59.42                             Mean   :0.645  
+##  3rd Qu.:147.4   3rd Qu.:63.10                             3rd Qu.:1.000  
+##  Max.   :164.8   Max.   :73.77                             Max.   :1.000  
+##  RAS_inhibitor         DM       End_stage_CKD 
+##  Min.   :0.000   Min.   :0.00   Min.   :0.00  
+##  1st Qu.:0.000   1st Qu.:0.00   1st Qu.:0.00  
+##  Median :0.000   Median :0.00   Median :0.00  
+##  Mean   :0.415   Mean   :0.17   Mean   :0.24  
+##  3rd Qu.:1.000   3rd Qu.:0.00   3rd Qu.:0.00  
+##  Max.   :1.000   Max.   :1.00   Max.   :1.00&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;str(study)&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## &amp;#39;data.frame&amp;#39;:    200 obs. of  8 variables:
+##  $ SBP          : num  149 135 158 141 144 ...
+##  $ Age          : num  63 64.1 56 54.4 62.7 ...
+##  $ Hospital     : Factor w/ 2 levels &amp;quot;A_hosp&amp;quot;,&amp;quot;B_hosp&amp;quot;: 1 2 1 2 1 2 1 2 1 2 ...
+##  $ CKD          : Factor w/ 3 levels &amp;quot;Stage3a&amp;quot;,&amp;quot;Stage3b&amp;quot;,..: 3 3 3 3 3 3 3 3 3 3 ...
+##  $ Sex          : int  1 1 0 1 0 1 0 0 1 1 ...
+##  $ RAS_inhibitor: int  1 1 1 0 0 1 1 1 1 1 ...
+##  $ DM           : int  1 0 1 0 0 0 0 0 0 1 ...
+##  $ End_stage_CKD: int  0 0 0 1 0 0 0 0 1 1 ...&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;おおむねイメージ通りのデータ&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;tidy-modelによる解析全体の解析&#34; class=&#34;section level1&#34;&gt;
+&lt;h1&gt;tidy modelによる解析:全体の解析&lt;/h1&gt;
+&lt;div id=&#34;model作成&#34; class=&#34;section level2&#34;&gt;
+&lt;h2&gt;model作成&lt;/h2&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;formula_ckd = c(End_stage_CKD ~ RAS_inhibitor + Age + Sex + DM + CKD) %&amp;gt;% 
+  enframe(&amp;quot;model_no&amp;quot;,&amp;quot;formula&amp;quot;)
+formula_ckd&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## # A tibble: 1 x 2
+##   model_no formula  
+##      &amp;lt;int&amp;gt; &amp;lt;list&amp;gt;   
+## 1        1 &amp;lt;formula&amp;gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;div id=&#34;解析&#34; class=&#34;section level2&#34;&gt;
+&lt;h2&gt;解析&lt;/h2&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;overall_result = formula_ckd %&amp;gt;% 
+  mutate(model = map(formula,glm,family = binomial(link = &amp;quot;logit&amp;quot;),data=study),
+         tidied = map(model,tidy),
+         confint = map(model,confint_tidy),
+         glanced = map(model, glance))&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## Warning: Problem with `mutate()` input `confint`.
+## i confint_tidy is now deprecated and will be removed from a future release of broom. Please use the applicable confint method.
+## i Input `confint` is `map(model, confint_tidy)`.&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## Warning: confint_tidy is now deprecated and will be removed from a future
+## release of broom. Please use the applicable confint method.&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;overall_result&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## # A tibble: 1 x 6
+##   model_no formula   model  tidied           confint          glanced         
+##      &amp;lt;int&amp;gt; &amp;lt;list&amp;gt;    &amp;lt;list&amp;gt; &amp;lt;list&amp;gt;           &amp;lt;list&amp;gt;           &amp;lt;list&amp;gt;          
+## 1        1 &amp;lt;formula&amp;gt; &amp;lt;glm&amp;gt;  &amp;lt;tibble [7 x 5]&amp;gt; &amp;lt;tibble [7 x 2]&amp;gt; &amp;lt;tibble [1 x 8]&amp;gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;div id=&#34;結果表示全体&#34; class=&#34;section level2&#34;&gt;
+&lt;h2&gt;結果表示：全体&lt;/h2&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;overall_coef = overall_result %&amp;gt;% 
+  select(model_no, tidied, confint) %&amp;gt;% #係数と95%CIを含む
+  unnest() %&amp;gt;% 
+  mutate_if(is.double,exp) %&amp;gt;%
+  mutate_if(is.double, round, digits=2) &lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## Warning: `cols` is now required when using unnest().
+## Please use `cols = c(tidied, confint)`&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;library(DT)
+datatable(overall_coef)&lt;/code&gt;&lt;/pre&gt;
+&lt;div id=&#34;htmlwidget-1&#34; style=&#34;width:100%;height:auto;&#34; class=&#34;datatables html-widget&#34;&gt;&lt;/div&gt;
+&lt;script type=&#34;application/json&#34; data-for=&#34;htmlwidget-1&#34;&gt;{&#34;x&#34;:{&#34;filter&#34;:&#34;none&#34;,&#34;data&#34;:[[&#34;1&#34;,&#34;2&#34;,&#34;3&#34;,&#34;4&#34;,&#34;5&#34;,&#34;6&#34;,&#34;7&#34;],[1,1,1,1,1,1,1],[&#34;(Intercept)&#34;,&#34;RAS_inhibitor&#34;,&#34;Age&#34;,&#34;Sex&#34;,&#34;DM&#34;,&#34;CKDStage3b&#34;,&#34;CKDStage4&#34;],[2.05,1.01,0.96,1.52,0.98,2.23,1.71],[7.55,1.42,1.03,1.44,1.57,1.58,1.58],[1.43,1.02,0.26,3.12,0.95,5.73,3.26],[2.06,2.68,1.19,1.29,2.62,1.08,1.27],[0.04,0.5,0.89,0.75,0.38,0.93,0.72],[110.74,1.99,1.02,3.19,2.3,5.71,4.34]],&#34;container&#34;:&#34;&lt;table class=\&#34;display\&#34;&gt;\n  &lt;thead&gt;\n    &lt;tr&gt;\n      &lt;th&gt; &lt;\/th&gt;\n      &lt;th&gt;model_no&lt;\/th&gt;\n      &lt;th&gt;term&lt;\/th&gt;\n      &lt;th&gt;estimate&lt;\/th&gt;\n      &lt;th&gt;std.error&lt;\/th&gt;\n      &lt;th&gt;statistic&lt;\/th&gt;\n      &lt;th&gt;p.value&lt;\/th&gt;\n      &lt;th&gt;conf.low&lt;\/th&gt;\n      &lt;th&gt;conf.high&lt;\/th&gt;\n    &lt;\/tr&gt;\n  &lt;\/thead&gt;\n&lt;\/table&gt;&#34;,&#34;options&#34;:{&#34;columnDefs&#34;:[{&#34;className&#34;:&#34;dt-right&#34;,&#34;targets&#34;:[1,3,4,5,6,7,8]},{&#34;orderable&#34;:false,&#34;targets&#34;:0}],&#34;order&#34;:[],&#34;autoWidth&#34;:false,&#34;orderClasses&#34;:false}},&#34;evals&#34;:[],&#34;jsHooks&#34;:[]}&lt;/script&gt;
+&lt;p&gt;こうするとestimateとCI以外にもp値なども指数化されることに注意&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&#34;サブグループ解析ckdstage毎&#34; class=&#34;section level2&#34;&gt;
+&lt;h2&gt;サブグループ解析:CKDstage毎&lt;/h2&gt;
+&lt;/div&gt;
+&lt;div id=&#34;解析-1&#34; class=&#34;section level2&#34;&gt;
+&lt;h2&gt;解析&lt;/h2&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;sub_CKD = study %&amp;gt;%
+  group_by(CKD) %&amp;gt;%
+  nest() %&amp;gt;% 
+  mutate(model_glm = map(data,
+                         ~ glm(End_stage_CKD ~ RAS_inhibitor + Age + Sex + DM,family = binomial()
+                               ,data= .)))&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;div id=&#34;結果確認&#34; class=&#34;section level2&#34;&gt;
+&lt;h2&gt;結果確認&lt;/h2&gt;
+&lt;p&gt;全体とやや方法が違うようにしている&lt;/p&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;## 結果
+sub_CKD %&amp;lt;&amp;gt;% mutate(coefs = map(model_glm,tidy))
+sub_CKD$coefs&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## [[1]]
+## # A tibble: 5 x 5
+##   term          estimate std.error statistic p.value
+##   &amp;lt;chr&amp;gt;            &amp;lt;dbl&amp;gt;     &amp;lt;dbl&amp;gt;     &amp;lt;dbl&amp;gt;   &amp;lt;dbl&amp;gt;
+## 1 (Intercept)      4.84     3.05       1.59   0.112 
+## 2 RAS_inhibitor   -0.621    0.583     -1.06   0.287 
+## 3 Age             -0.106    0.0517    -2.05   0.0404
+## 4 Sex              0.718    0.656      1.10   0.273 
+## 5 DM               0.174    0.776      0.224  0.823 
+## 
+## [[2]]
+## # A tibble: 5 x 5
+##   term          estimate std.error statistic p.value
+##   &amp;lt;chr&amp;gt;            &amp;lt;dbl&amp;gt;     &amp;lt;dbl&amp;gt;     &amp;lt;dbl&amp;gt;   &amp;lt;dbl&amp;gt;
+## 1 (Intercept)    -2.33      3.69      -0.631   0.528
+## 2 RAS_inhibitor   0.520     0.564      0.922   0.357
+## 3 Age             0.0172    0.0607     0.284   0.777
+## 4 Sex             0.407     0.556      0.733   0.464
+## 5 DM             -0.232     0.741     -0.313   0.754
+## 
+## [[3]]
+## # A tibble: 5 x 5
+##   term          estimate std.error statistic p.value
+##   &amp;lt;chr&amp;gt;            &amp;lt;dbl&amp;gt;     &amp;lt;dbl&amp;gt;     &amp;lt;dbl&amp;gt;   &amp;lt;dbl&amp;gt;
+## 1 (Intercept)     0.658     4.61      0.143    0.887
+## 2 RAS_inhibitor   0.0198    0.738     0.0268   0.979
+## 3 Age            -0.0388    0.0752   -0.517    0.605
+## 4 Sex            -0.125     0.795    -0.157    0.876
+## 5 DM              0.415     0.907     0.458    0.647&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;## 95%CI 
+sub_CKD %&amp;lt;&amp;gt;% mutate(confint = map(model_glm,confint_tidy))&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## Warning: Problem with `mutate()` input `confint`.
+## i confint_tidy is now deprecated and will be removed from a future release of broom. Please use the applicable confint method.
+## i Input `confint` is `map(model_glm, confint_tidy)`.
+## i The error occurred in group 1: CKD = &amp;quot;Stage3a&amp;quot;.&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## Warning: confint_tidy is now deprecated and will be removed from a future
+## release of broom. Please use the applicable confint method.&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## Warning: Problem with `mutate()` input `confint`.
+## i confint_tidy is now deprecated and will be removed from a future release of broom. Please use the applicable confint method.
+## i Input `confint` is `map(model_glm, confint_tidy)`.
+## i The error occurred in group 2: CKD = &amp;quot;Stage3b&amp;quot;.&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## Warning: confint_tidy is now deprecated and will be removed from a future
+## release of broom. Please use the applicable confint method.&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## Warning: Problem with `mutate()` input `confint`.
+## i confint_tidy is now deprecated and will be removed from a future release of broom. Please use the applicable confint method.
+## i Input `confint` is `map(model_glm, confint_tidy)`.
+## i The error occurred in group 3: CKD = &amp;quot;Stage4&amp;quot;.&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## Warning: confint_tidy is now deprecated and will be removed from a future
+## release of broom. Please use the applicable confint method.&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;sub_CKD$confint&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## [[1]]
+## # A tibble: 5 x 2
+##   conf.low conf.high
+##      &amp;lt;dbl&amp;gt;     &amp;lt;dbl&amp;gt;
+## 1   -0.992  11.1    
+## 2   -1.81    0.504  
+## 3   -0.214  -0.00850
+## 4   -0.501   2.12   
+## 5   -1.49    1.65   
+## 
+## [[2]]
+## # A tibble: 5 x 2
+##   conf.low conf.high
+##      &amp;lt;dbl&amp;gt;     &amp;lt;dbl&amp;gt;
+## 1   -9.73      4.90 
+## 2   -0.607     1.63 
+## 3   -0.103     0.138
+## 4   -0.667     1.54 
+## 5   -1.85      1.14 
+## 
+## [[3]]
+## # A tibble: 5 x 2
+##   conf.low conf.high
+##      &amp;lt;dbl&amp;gt;     &amp;lt;dbl&amp;gt;
+## 1   -8.85      9.72 
+## 2   -1.49      1.48 
+## 3   -0.191     0.112
+## 4   -1.65      1.57 
+## 5   -1.63      2.09&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;div id=&#34;まとめて表示&#34; class=&#34;section level2&#34;&gt;
+&lt;h2&gt;まとめて表示&lt;/h2&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;df &amp;lt;- sub_CKD %&amp;gt;% 
+  select(CKD, cols = c(coefs,confint)) %&amp;gt;%
+  unnest() %&amp;gt;% 
+  filter(term != &amp;quot;(Intercept)&amp;quot;) %&amp;gt;% # 切片は無視
+  mutate_if(is_double,round,digits =2) %&amp;gt;%
+  mutate_if(is.double,exp) #95CIと係数をexp変換したいとき&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## Warning: `cols` is now required when using unnest().
+## Please use `cols = c(cols1, cols2)`&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;## `mutate_if()` ignored the following grouping variables:
+## Column `CKD`
+## `mutate_if()` ignored the following grouping variables:
+## Column `CKD`&lt;/code&gt;&lt;/pre&gt;
+&lt;pre class=&#34;r&#34;&gt;&lt;code&gt;datatable(df)&lt;/code&gt;&lt;/pre&gt;
+&lt;div id=&#34;htmlwidget-2&#34; style=&#34;width:100%;height:auto;&#34; class=&#34;datatables html-widget&#34;&gt;&lt;/div&gt;
+&lt;script type=&#34;application/json&#34; data-for=&#34;htmlwidget-2&#34;&gt;{&#34;x&#34;:{&#34;filter&#34;:&#34;none&#34;,&#34;data&#34;:[[&#34;1&#34;,&#34;2&#34;,&#34;3&#34;,&#34;4&#34;,&#34;5&#34;,&#34;6&#34;,&#34;7&#34;,&#34;8&#34;,&#34;9&#34;,&#34;10&#34;,&#34;11&#34;,&#34;12&#34;],[&#34;Stage4&#34;,&#34;Stage4&#34;,&#34;Stage4&#34;,&#34;Stage4&#34;,&#34;Stage3b&#34;,&#34;Stage3b&#34;,&#34;Stage3b&#34;,&#34;Stage3b&#34;,&#34;Stage3a&#34;,&#34;Stage3a&#34;,&#34;Stage3a&#34;,&#34;Stage3a&#34;],[&#34;RAS_inhibitor&#34;,&#34;Age&#34;,&#34;Sex&#34;,&#34;DM&#34;,&#34;RAS_inhibitor&#34;,&#34;Age&#34;,&#34;Sex&#34;,&#34;DM&#34;,&#34;RAS_inhibitor&#34;,&#34;Age&#34;,&#34;Sex&#34;,&#34;DM&#34;],[0.537944437594674,0.895834135296528,2.05443321064389,1.18530485132037,1.68202764969889,1.02020134002676,1.50681778511285,0.794533602503334,1.02020134002676,0.960789439152323,0.886920436717157,1.50681778511285],[1.78603843075007,1.05127109637602,1.93479233440203,2.1814722654982,1.7506725002961,1.06183654654536,1.7506725002961,2.09593551449436,2.09593551449436,1.08328706767496,2.22554092849247,2.48432253338482],[0.346455810330057,0.128734903587804,3.00416602394643,1.24607673058738,2.5092903899363,1.32312981233744,2.07508060767412,0.733446956224289,1.03045453395352,0.594520547970194,0.852143788966211,1.58407398499448],[1.33642748802547,1.04081077419239,1.30996445073325,2.27049983753241,1.43332941456034,2.1814722654982,1.58407398499448,2.11700001661267,2.66445624192942,1.84043139878164,2.41089970641721,1.9155408290139],[0.163654136802704,0.810584245970187,0.606530659712633,0.225372655539439,0.5433508690745,0.90483741803596,0.511708577786542,0.157237166313628,0.225372655539439,0.826959133943362,0.192049908620754,0.195929574126909],[1.64872127070013,0.990049833749168,8.33113748768769,5.20697982717985,5.10387471853673,1.15027379885723,4.66459027098813,3.12676836518616,4.39294568091876,1.11627807045887,4.80664819377518,8.08491516430506]],&#34;container&#34;:&#34;&lt;table class=\&#34;display\&#34;&gt;\n  &lt;thead&gt;\n    &lt;tr&gt;\n      &lt;th&gt; &lt;\/th&gt;\n      &lt;th&gt;CKD&lt;\/th&gt;\n      &lt;th&gt;term&lt;\/th&gt;\n      &lt;th&gt;estimate&lt;\/th&gt;\n      &lt;th&gt;std.error&lt;\/th&gt;\n      &lt;th&gt;statistic&lt;\/th&gt;\n      &lt;th&gt;p.value&lt;\/th&gt;\n      &lt;th&gt;conf.low&lt;\/th&gt;\n      &lt;th&gt;conf.high&lt;\/th&gt;\n    &lt;\/tr&gt;\n  &lt;\/thead&gt;\n&lt;\/table&gt;&#34;,&#34;options&#34;:{&#34;columnDefs&#34;:[{&#34;className&#34;:&#34;dt-right&#34;,&#34;targets&#34;:[3,4,5,6,7,8]},{&#34;orderable&#34;:false,&#34;targets&#34;:0}],&#34;order&#34;:[],&#34;autoWidth&#34;:false,&#34;orderClasses&#34;:false}},&#34;evals&#34;:[],&#34;jsHooks&#34;:[]}&lt;/script&gt;
+&lt;p&gt;今回もestimateとCI以外にも指数化されていることに注意&lt;/p&gt;
+&lt;p&gt;この方法の良い点はいろいろあるがサブグループ解析をする際になどに可読性がよくなる点である。&lt;/p&gt;
+&lt;p&gt;今回もデータをグループ毎に分割して解析すると、その分だけスクリプトが長くなり可読性が低下する。&lt;/p&gt;
+&lt;p&gt;それを防ぐことができる。&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+</description>
+    </item>
     
     <item>
       <title>Rによる傾向スコア分析の実装２</title>

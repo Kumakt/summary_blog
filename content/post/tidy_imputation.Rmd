@@ -1,0 +1,170 @@
+---
+# Documentation: https://sourcethemes.com/academic/docs/managing-content/
+
+title: "Tidyな医療系データ処理"
+subtitle: "Tips"
+summary: "医療系データでTidyな解析を行う"
+authors: [Kumakt]
+tags: ["Tidy","サブグループ解析"]
+categories: ["R"]
+date: 2020-09-27T15:38:38+09:00
+lastmod: 2020-09-27T15:38:38+09:00
+featured: false
+draft: true
+
+# Featured image
+# To use, add an image named `featured.jpg/png` to your page's folder.
+# Focal points: Smart, Center, TopLeft, Top, TopRight, Left, Right, BottomLeft, Bottom, BottomRight.
+image:
+  caption: ""
+  focal_point: ""
+  preview_only: false
+
+# Projects (optional).
+#   Associate this post with one or more of your projects.
+#   Simply enter your project's folder or file name without extension.
+#   E.g. `projects = ["internal-project"]` references `content/project/deep-learning/index.md`.
+#   Otherwise, set `projects = []`.
+projects: []
+---
+
+## テーマ
+
+- Tidyなデータ処理についてはWebに有用な情報がたくさんある。
+- 医療系のデータについて具体例がないため仮想データで解析してみる。
+
+## パッケージの読み込み
+
+```{r message=FALSE}
+library(dplyr)
+library(magrittr)
+library(tidyverse)
+library(broom)
+```
+
+
+## データの作成
+
+- 架空データを作成：CKD患者さんにRAS阻害剤を投与した場合の１年後End_stage_CKDの有無を調べたデータ
+- 簡単のため時間は無視
+
+```{r}
+set.seed(125) # 乱数の固定のシード
+a <- rnorm(n = 200, mean = 140, sd = 10 )
+b <- rnorm(n = 200, mean = 60, sd = 5 )
+c <- rep(c("A_hosp","B_hosp"),100)
+d <- c( rep("Stage4",75), rep("Stage3b",70), rep("Stage3a",55))
+e <- rbinom(200,1,0.6)
+f <- rbinom(200,1,0.4)
+g <- rbinom(200,1,0.25)
+h <- rbinom(200,1,0.3)
+study <- data.frame(a,b,c,d,e,f,g,h)
+name  <- c("SBP", "Age", "Hospital","CKD","Sex","RAS_inhibitor","DM","End_stage_CKD") 
+colnames(study) <- name
+```
+
+- イメージとしては２つの病院でCKD3a以上の200人のデータを調べたデータ
+
+## data確認
+
+```{r}
+summary(study)
+str(study)
+```
+
+おおむねイメージ通りのデータ
+
+# tidy modelによる解析:全体の解析
+
+## model作成
+
+```{r}
+formula_ckd = c(End_stage_CKD ~ RAS_inhibitor + Age + Sex + DM + CKD) %>% 
+  enframe("model_no","formula")
+formula_ckd
+```
+
+## 解析
+
+```{r}
+overall_result = formula_ckd %>% 
+  mutate(model = map(formula,glm,family = binomial(link = "logit"),data=study),
+         tidied = map(model,tidy),
+         confint = map(model,confint_tidy),
+         glanced = map(model, glance))
+```
+
+
+```{r}
+overall_result
+```
+
+## 結果表示：全体
+
+```{r}
+overall_coef = overall_result %>% 
+  select(model_no, tidied, confint) %>% #係数と95%CIを含む
+  unnest() %>% 
+  mutate_if(is.double,exp) %>%
+  mutate_if(is.double, round, digits=2) 
+```
+
+
+```{r}
+library(DT)
+datatable(overall_coef)
+```
+
+こうするとestimateとCI以外にもp値なども指数化されることに注意
+
+
+## サブグループ解析:CKDstage毎
+## 解析
+
+```{r}
+sub_CKD = study %>%
+  group_by(CKD) %>%
+  nest() %>% 
+  mutate(model_glm = map(data,
+                         ~ glm(End_stage_CKD ~ RAS_inhibitor + Age + Sex + DM,family = binomial()
+                               ,data= .)))
+```
+
+
+## 結果確認
+
+全体とやや方法が違うようにしている
+
+```{r}
+## 結果
+sub_CKD %<>% mutate(coefs = map(model_glm,tidy))
+sub_CKD$coefs
+## 95%CI 
+sub_CKD %<>% mutate(confint = map(model_glm,confint_tidy))
+sub_CKD$confint
+```
+
+## まとめて表示
+
+```{r}
+df <- sub_CKD %>% 
+  select(CKD, cols = c(coefs,confint)) %>%
+  unnest() %>% 
+  filter(term != "(Intercept)") %>% # 切片は無視
+  mutate_if(is_double,round,digits =2) %>%
+  mutate_if(is.double,exp) #95CIと係数をexp変換したいとき
+```
+
+
+```{r}
+datatable(df)
+```
+
+今回もestimateとCI以外にも指数化されていることに注意
+
+この方法の良い点はいろいろあるがサブグループ解析をする際になどに可読性がよくなる点である。
+
+今回もデータをグループ毎に分割して解析すると、その分だけスクリプトが長くなり可読性が低下する。
+
+それを防ぐことができる。
+
