@@ -2,7 +2,7 @@
 # Documentation: https://sourcethemes.com/academic/docs/managing-content/
 
 title: "Tidyな医療系データ処理"
-subtitle: "Tips"
+subtitle: "Tidy系でのデータ処理"
 summary: "医療系データでTidyな解析を行う"
 authors: [Kumakt]
 tags: ["Tidy","サブグループ解析"]

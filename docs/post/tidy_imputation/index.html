@@ -506,7 +506,7 @@
   <h1>Tidyな医療系データ処理</h1>
 
   
-  <p class="page-subtitle">Tips</p>
+  <p class="page-subtitle">Tidy系でのデータ処理</p>
   
 
   
@@ -813,10 +813,23 @@ sub_CKD %&lt;&gt;% mutate(confint = map(model_glm,confint_tidy))</code></pre>
   mutate_if(is.double,exp) #95CIと係数をexp変換したいとき</code></pre>
 <pre><code>## Warning: `cols` is now required when using unnest().
 ## Please use `cols = c(cols1, cols2)`</code></pre>
-<pre><code>## `mutate_if()` ignored the following grouping variables:
-## Column `CKD`
-## `mutate_if()` ignored the following grouping variables:
-## Column `CKD`</code></pre>
+<pre class="r"><code>df</code></pre>
+<pre><code>## # A tibble: 12 x 8
+## # Groups:   CKD [3]
+##    CKD     term          estimate std.error statistic p.value conf.low conf.high
+##    &lt;fct&gt;   &lt;chr&gt;            &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;   &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt;
+##  1 Stage4  RAS_inhibitor    0.538      1.79     0.346    1.34    0.164     1.65 
+##  2 Stage4  Age              0.896      1.05     0.129    1.04    0.811     0.990
+##  3 Stage4  Sex              2.05       1.93     3.00     1.31    0.607     8.33 
+##  4 Stage4  DM               1.19       2.18     1.25     2.27    0.225     5.21 
+##  5 Stage3b RAS_inhibitor    1.68       1.75     2.51     1.43    0.543     5.10 
+##  6 Stage3b Age              1.02       1.06     1.32     2.18    0.905     1.15 
+##  7 Stage3b Sex              1.51       1.75     2.08     1.58    0.512     4.66 
+##  8 Stage3b DM               0.795      2.10     0.733    2.12    0.157     3.13 
+##  9 Stage3a RAS_inhibitor    1.02       2.10     1.03     2.66    0.225     4.39 
+## 10 Stage3a Age              0.961      1.08     0.595    1.84    0.827     1.12 
+## 11 Stage3a Sex              0.887      2.23     0.852    2.41    0.192     4.81 
+## 12 Stage3a DM               1.51       2.48     1.58     1.92    0.196     8.08</code></pre>
 <pre class="r"><code>datatable(df)</code></pre>
 <div id="htmlwidget-2" style="width:100%;height:auto;" class="datatables html-widget"></div>
 <script type="application/json" data-for="htmlwidget-2">{"x":{"filter":"none","data":[["1","2","3","4","5","6","7","8","9","10","11","12"],["Stage4","Stage4","Stage4","Stage4","Stage3b","Stage3b","Stage3b","Stage3b","Stage3a","Stage3a","Stage3a","Stage3a"],["RAS_inhibitor","Age","Sex","DM","RAS_inhibitor","Age","Sex","DM","RAS_inhibitor","Age","Sex","DM"],[0.537944437594674,0.895834135296528,2.05443321064389,1.18530485132037,1.68202764969889,1.02020134002676,1.50681778511285,0.794533602503334,1.02020134002676,0.960789439152323,0.886920436717157,1.50681778511285],[1.78603843075007,1.05127109637602,1.93479233440203,2.1814722654982,1.7506725002961,1.06183654654536,1.7506725002961,2.09593551449436,2.09593551449436,1.08328706767496,2.22554092849247,2.48432253338482],[0.346455810330057,0.128734903587804,3.00416602394643,1.24607673058738,2.5092903899363,1.32312981233744,2.07508060767412,0.733446956224289,1.03045453395352,0.594520547970194,0.852143788966211,1.58407398499448],[1.33642748802547,1.04081077419239,1.30996445073325,2.27049983753241,1.43332941456034,2.1814722654982,1.58407398499448,2.11700001661267,2.66445624192942,1.84043139878164,2.41089970641721,1.9155408290139],[0.163654136802704,0.810584245970187,0.606530659712633,0.225372655539439,0.5433508690745,0.90483741803596,0.511708577786542,0.157237166313628,0.225372655539439,0.826959133943362,0.192049908620754,0.195929574126909],[1.64872127070013,0.990049833749168,8.33113748768769,5.20697982717985,5.10387471853673,1.15027379885723,4.66459027098813,3.12676836518616,4.39294568091876,1.11627807045887,4.80664819377518,8.08491516430506]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>CKD<\/th>\n      <th>term<\/th>\n      <th>estimate<\/th>\n      <th>std.error<\/th>\n      <th>statistic<\/th>\n      <th>p.value<\/th>\n      <th>conf.low<\/th>\n      <th>conf.high<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"columnDefs":[{"className":"dt-right","targets":[3,4,5,6,7,8]},{"orderable":false,"targets":0}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
